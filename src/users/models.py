@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import String, DateTime, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.db.base import Base
 
 
@@ -16,3 +16,5 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    products: Mapped[list["Product"]] = relationship(back_populates="seller", cascade="all, delete-orphan")
