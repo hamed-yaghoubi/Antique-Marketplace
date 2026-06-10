@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antique Marketplace</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">Antique Marketplace</div>
+      <nav>
+        <button type="button" data-view="login" class="tab active">ورود</button>
+        <button type="button" data-view="register" class="tab">ثبت نام</button>
+        <button type="button" data-view="products" class="tab">محصولات</button>
+        <button type="button" data-view="cart" class="tab">سبد خرید</button>
+        <button type="button" data-view="orders" class="tab">سفارش‌ها</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="message" class="message hidden"></section>
+
+      <section id="login" class="view">
+        <h2>ورود</h2>
+        <form id="login-form" class="form-card">
+          <label>نام کاربری
+            <input type="text" name="username" required>
+          </label>
+          <label>رمز عبور
+            <input type="password" name="password" required>
+          </label>
+          <button type="submit" class="primary-btn">ورود</button>
+        </form>
+      </section>
+
+      <section id="register" class="view hidden">
+        <h2>ثبت نام</h2>
+        <form id="register-form" class="form-card">
+          <label>نام کاربری
+            <input type="text" name="username" required>
+          </label>
+          <label>رمز عبور
+            <input type="password" name="password" required>
+          </label>
+          <label>تکرار رمز عبور
+            <input type="password" name="confirm_password" required>
+          </label>
+          <button type="submit" class="primary-btn">ثبت نام</button>
+        </form>
+      </section>
+
+      <section id="products" class="view hidden">
+        <h2>محصولات</h2>
+        <div id="products-list" class="data-card">برای نمایش محصولات نیاز به پیاده‌سازی مسیر /products در بک‌اند دارد.</div>
+      </section>
+
+      <section id="cart" class="view hidden">
+        <h2>سبد خرید</h2>
+        <div id="cart-list" class="data-card">برای نمایش سبد خرید نیاز به پیاده‌سازی مسیر /cart در بک‌اند دارد.</div>
+      </section>
+
+      <section id="orders" class="view hidden">
+        <h2>سفارش‌ها</h2>
+        <div id="orders-list" class="data-card">برای نمایش سفارش‌ها نیاز به پیاده‌سازی مسیر /orders در بک‌اند دارد.</div>
+      </section>
+
+      <section id="profile" class="view hidden">
+        <h2>پروفایل</h2>
+        <div class="profile-card">
+          <p><strong>نام کاربری:</strong> <span id="profile-username">-</span></p>
+          <p><strong>شناسه:</strong> <span id="profile-id">-</span></p>
+          <p><strong>تاریخ ساخت حساب:</strong> <span id="profile-created">-</span></p>
+          <button id="logout-btn" class="secondary-btn">خروج</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
