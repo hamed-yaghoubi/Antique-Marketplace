@@ -22,7 +22,7 @@ def read_product(product_id: int, db: DbSession):
             detail=e.message,
         )
 
-@router.post("/", response_model=ProductResponse)
+@router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_new_product(data: ProductCreate, db: DbSession, current_user: CurrentUser):
     return service.create_product(db, data, current_user)
 

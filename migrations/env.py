@@ -31,6 +31,7 @@ if config.config_file_name is not None:
 from src.db.base import Base
 from src.users.models import User
 from src.products.models import Product
+from src.cart.models import CartItem
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

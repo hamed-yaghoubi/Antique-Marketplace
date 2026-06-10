@@ -9,7 +9,7 @@ from src.auth.service import register, login, change_password
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_create: UserCreate, db: DbSession):
     try:
         return register(db, user_create)
