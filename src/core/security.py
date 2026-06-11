@@ -2,8 +2,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 import jwt
 from pwdlib import PasswordHash
-from src.core.config import settings
+from src.core.config import get_settings
 
+settings = get_settings()
 
 password_hash = PasswordHash.recommended()
 

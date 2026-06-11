@@ -17,10 +17,7 @@ def read_product(product_id: int, db: DbSession):
         return service.get_product(db, product_id)
 
     except ProductNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_new_product(data: ProductCreate, db: DbSession, current_user: CurrentUser):
@@ -36,16 +33,10 @@ def update_product_route(product_id: int, data: ProductUpdate, db: DbSession, cu
         return service.update_product(db, product_id, data, current_user)
 
     except ProductNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
     except ForbiddenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product_route(product_id: int, db: DbSession, current_user: CurrentUser):
@@ -53,13 +44,7 @@ def delete_product_route(product_id: int, db: DbSession, current_user: CurrentUs
         service.delete_product(db, product_id, current_user)
 
     except ProductNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
     except ForbiddenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)

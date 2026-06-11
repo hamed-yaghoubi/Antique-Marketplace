@@ -1,89 +1,49 @@
-class AppError(Exception):
-    """Base exception for all application errors."""
-
-    default_message = "Application error"
-
-    def __init__(self, message: str | None = None) -> None:
-        self.message = message or self.default_message
-
-        super().__init__(self.message)
+class AppException(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
 
 
-# ============================================================================
-# Auth
-# ============================================================================
-
-class InvalidCredentialsError(AppError):
-    default_message = "Invalid password"
+class UserAlreadyExistsError(AppException):
+    def __init__(self):
+        super().__init__("User already exists")
 
 
-class UserAlreadyExistsError(AppError):
-    default_message = "User already exists"
+class UserNotFoundError(AppException):
+    def __init__(self):
+        super().__init__("User not found")
 
 
-class InactiveUserError(AppError):
-    default_message = "User account is inactive"
+class InvalidCredentialsError(AppException):
+    def __init__(self):
+        super().__init__("Invalid credentials")
 
 
-class UnauthorizedError(AppError):
-    default_message = "Authentication required"
+class ProductNotFoundError(AppException):
+    def __init__(self):
+        super().__init__("Product not found")
 
 
-class ForbiddenError(AppError):
-    default_message = "Permission denied"
+class CartItemNotFoundError(AppException):
+    def __init__(self):
+        super().__init__("Cart item not found")
 
 
-# ============================================================================
-# Users
-# ============================================================================
-
-class UserNotFoundError(AppError):
-    default_message = "User not found"
+class OrderNotFoundError(AppException):
+    def __init__(self):
+        super().__init__("Order not found")
 
 
-# ============================================================================
-# Products
-# ============================================================================
-
-class ProductNotFoundError(AppError):
-    default_message = "Product not found"
+class EmptyCartError(AppException):
+    def __init__(self):
+        super().__init__("Cart is empty")
 
 
-class ProductOutOfStockError(AppError):
-    default_message = "Product is out of stock"
+class InsufficientStockError(AppException):
+    def __init__(self):
+        super().__init__("Insufficient stock")
 
 
-class InvalidProductPriceError(AppError):
-    default_message = "Invalid product price"
-
-
-# ============================================================================
-# Cart
-# ============================================================================
-
-class CartIsEmptyError(AppError):
-    default_message = "Cart is empty"
-
-
-class CartItemNotFoundError(AppError):
-    default_message = "Cart item not found"
-
-
-# ============================================================================
-# Orders
-# ============================================================================
-
-class OrderNotFoundError(AppError):
-    default_message = "Order not found"
-
-
-class InvalidOrderStatusError(AppError):
-    default_message = "Invalid order status"
-
-
-class OrderAlreadyPaidError(AppError):
-    default_message = "Order has already been paid"
-
-
-class OrderAlreadyCancelledError(AppError):
-    default_message = "Order has already been cancelled"
+class ForbiddenError(AppException):
+    def __init__(self):
+        super().__init__("You do not have permission to perform this action")
