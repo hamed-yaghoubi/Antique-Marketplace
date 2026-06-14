@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from src.auth.schemas import LoginRequest, Token, ChangePasswordRequest
 from src.core.exceptions import InvalidCredentialsError, UserAlreadyExistsError
 from src.dependencies.auth import CurrentUser
@@ -9,7 +10,9 @@ from src.auth.service import register, login, change_password
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 def register_user(user_create: UserCreate, db: DbSession):
     try:
         return register(db, user_create)
@@ -19,9 +22,10 @@ def register_user(user_create: UserCreate, db: DbSession):
 
 
 @router.post("/login", response_model=Token)
-def login_user(data: LoginRequest, db: DbSession):
+def login_user(db: DbSession, form_data: OAuth2PasswordRequestForm = Depends()):
     try:
-        return login(db, data)
+        creds = LoginRequest(username=form_data.username, password=form_data.password)
+        return login(db, creds)
 
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
@@ -33,13 +37,13 @@ def get_me(current_user: CurrentUser):
 
 
 @router.patch("/change-password")
-def update_password(data: ChangePasswordRequest, current_user: CurrentUser, db: DbSession):
+def update_password(
+    data: ChangePasswordRequest, current_user: CurrentUser, db: DbSession
+):
     try:
         change_password(db, current_user, data)
 
-        return {
-            "message": "Password changed successfully"
-        }
+        return {"message": "Password changed successfully"}
 
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)

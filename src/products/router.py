@@ -11,6 +11,31 @@ router = APIRouter(prefix="/products", tags=["Products"])
 def read_products(db: DbSession):
     return service.get_products(db)
 
+@router.get("/me", response_model=list[ProductCard])
+def read_my_products(db: DbSession, current_user: CurrentUser):
+    return service.get_my_products(db, current_user)
+
+from fastapi import UploadFile, File
+from src.products.schemas import ProductImageResponse
+
+@router.post("/{product_id}/images", response_model=ProductImageResponse, status_code=status.HTTP_201_CREATED)
+def upload_product_image_route(product_id: int, db: DbSession, current_user: CurrentUser, file: UploadFile = File(...)):
+    try:
+        return service.upload_product_image(db, product_id, file, current_user)
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+
+@router.delete("/{product_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_product_image_route(product_id: int, image_id: int, db: DbSession, current_user: CurrentUser):
+    try:
+        service.delete_product_image(db, product_id, image_id, current_user)
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
+    except ForbiddenError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+    
 @router.get("/{product_id}", response_model=ProductResponse)
 def read_product(product_id: int, db: DbSession):
     try:
@@ -23,9 +48,6 @@ def read_product(product_id: int, db: DbSession):
 def create_new_product(data: ProductCreate, db: DbSession, current_user: CurrentUser):
     return service.create_product(db, data, current_user)
 
-@router.get("/me", response_model=list[ProductCard])
-def read_my_products(db: DbSession, current_user: CurrentUser):
-    return service.get_my_products(db, current_user)
 
 @router.patch("/{product_id}", response_model=ProductResponse)
 def update_product_route(product_id: int, data: ProductUpdate, db: DbSession, current_user: CurrentUser):

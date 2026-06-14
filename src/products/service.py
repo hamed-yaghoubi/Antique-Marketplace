@@ -51,3 +51,44 @@ def delete_product(db: Session, product_id: int, current_user: User) -> None:
         raise ForbiddenError()
 
     repository.delete(db, product)
+
+import os, uuid
+from fastapi import UploadFile
+from src.products.models import ProductImage
+
+UPLOAD_DIR = "static/uploads/products"
+
+def upload_product_image(db: Session, product_id: int, file: UploadFile, current_user: User) -> ProductImage:
+    product = get_product(db, product_id)
+
+    if product.seller_id != current_user.id:
+        raise ForbiddenError()
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(file.file.read())
+
+    image = ProductImage(
+        product_id=product_id,
+        image_url=f"/static/uploads/products/{filename}"
+    )
+
+    return repository.add_image(db, image)
+
+def delete_product_image(db: Session, product_id: int, image_id: int, current_user: User) -> None:
+    product = get_product(db, product_id)
+
+    if product.seller_id != current_user.id:
+        raise ForbiddenError()
+
+    image = repository.get_image_by_id(db, image_id)
+
+    if image is None or image.product_id != product_id:
+        raise ProductNotFoundError()
+
+    repository.delete_image(db, image)

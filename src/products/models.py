@@ -28,3 +28,16 @@ class Product(Base):
     seller = relationship("User", back_populates="products")
 
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+
+    images: Mapped[list["ProductImage"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+
+from sqlalchemy import ForeignKey
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    image_url: Mapped[str] = mapped_column(String(500))
+
+    product: Mapped["Product"] = relationship(back_populates="images")

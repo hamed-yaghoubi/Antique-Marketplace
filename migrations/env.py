@@ -1,5 +1,6 @@
 from logging.config import fileConfig
-
+from src.db.base import Base
+from src.products.models import Product, ProductImage
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
