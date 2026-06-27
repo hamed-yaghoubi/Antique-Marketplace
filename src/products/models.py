@@ -15,15 +15,19 @@ class Product(Base):
 
     description: Mapped[str] = mapped_column(Text)
 
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    sku: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), index=True)
 
     quantity: Mapped[int]
 
-    category: Mapped[ProductCategory] = mapped_column(Enum(ProductCategory))
+    category: Mapped[ProductCategory] = mapped_column(Enum(ProductCategory), index=True)
 
-    seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    is_active: Mapped[bool] = mapped_column(default=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     seller = relationship("User", back_populates="products")
 
@@ -31,7 +35,6 @@ class Product(Base):
 
     images: Mapped[list["ProductImage"]] = relationship(back_populates="product", cascade="all, delete-orphan")
 
-from sqlalchemy import ForeignKey
 
 class ProductImage(Base):
     __tablename__ = "product_images"

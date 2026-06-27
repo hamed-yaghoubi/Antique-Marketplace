@@ -31,6 +31,7 @@ from src.users.models import User
 from src.products.models import Product, ProductImage
 from src.cart.models import CartItem
 from src.orders.models import Order, OrderItem
+from src.auth.models import RefreshToken
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

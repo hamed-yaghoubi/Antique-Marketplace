@@ -1,6 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from src.products.models import Product
+from src.products.models import Product, ProductImage
+from src.products.schemas import ProductFilter, PaginationParams
 
 
 def get_by_id(db: Session, product_id: int) -> Product | None:
@@ -12,6 +13,60 @@ def get_all(db: Session) -> list[Product] | None:
     result = db.execute(query).scalars().all()
 
     return result
+
+
+def get_filtered(db: Session, filters: ProductFilter, pagination: PaginationParams) -> tuple[list[Product], int]:
+    query = select(Product)
+
+    if filters.search:
+        search_term = f"%{filters.search}%"
+        query = query.where(
+            (Product.title.ilike(search_term)) |
+            (Product.description.ilike(search_term)) |
+            (Product.sku.ilike(search_term))
+        )
+
+    if filters.category:
+        query = query.where(Product.category == filters.category)
+
+    if filters.min_price is not None:
+        query = query.where(Product.price >= filters.min_price)
+
+    if filters.max_price is not None:
+        query = query.where(Product.price <= filters.max_price)
+
+    if filters.min_quantity is not None:
+        query = query.where(Product.quantity >= filters.min_quantity)
+
+    if filters.max_quantity is not None:
+        query = query.where(Product.quantity <= filters.max_quantity)
+
+    if filters.is_active is not None:
+        query = query.where(Product.is_active == filters.is_active)
+
+    if filters.seller_id is not None:
+        query = query.where(Product.seller_id == filters.seller_id)
+
+    if filters.created_after is not None:
+        query = query.where(Product.created_at >= filters.created_after)
+
+    if filters.created_before is not None:
+        query = query.where(Product.created_at <= filters.created_before)
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total = db.execute(count_query).scalar()
+
+    sort_column = getattr(Product, filters.sort_by, Product.created_at)
+    if filters.sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    offset = (pagination.page - 1) * pagination.page_size
+    query = query.offset(offset).limit(pagination.page_size)
+
+    products = db.execute(query).scalars().all()
+    return list(products), total
 
 
 def create(db: Session, product: Product) -> Product:

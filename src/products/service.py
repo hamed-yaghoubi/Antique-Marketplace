@@ -1,13 +1,17 @@
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from src.core.exceptions import ForbiddenError, ProductNotFoundError
-from src.products.models import Product
+from src.products.models import Product, ProductImage
 from src.products import repository
-from src.products.schemas import ProductCreate, ProductUpdate
+from src.products.schemas import ProductCreate, ProductUpdate, ProductFilter, PaginationParams
 from src.users.models import User
+import os, uuid
+from src.core.config import get_settings
 
+settings = get_settings()
 
 def get_product(db: Session, product_id: int) -> Product:
-    
+
     product = repository.get_by_id(db, product_id)
 
     if product is None:
@@ -17,6 +21,13 @@ def get_product(db: Session, product_id: int) -> Product:
 
 def get_products(db: Session) -> list[Product]:
     return repository.get_all(db)
+
+def get_filtered_products(
+    db: Session,
+    filters: ProductFilter,
+    pagination: PaginationParams,
+) -> tuple[list[Product], int]:
+    return repository.get_filtered(db, filters, pagination)
 
 def get_my_products(db: Session, current_user: User) -> list[Product]:
     return repository.get_by_seller_id(db, current_user.id)
@@ -52,11 +63,6 @@ def delete_product(db: Session, product_id: int, current_user: User) -> None:
 
     repository.delete(db, product)
 
-import os, uuid
-from fastapi import UploadFile
-from src.products.models import ProductImage
-
-UPLOAD_DIR = "static/uploads/products"
 
 def upload_product_image(db: Session, product_id: int, file: UploadFile, current_user: User) -> ProductImage:
     product = get_product(db, product_id)
@@ -64,18 +70,18 @@ def upload_product_image(db: Session, product_id: int, file: UploadFile, current
     if product.seller_id != current_user.id:
         raise ForbiddenError()
 
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
     ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    filepath = os.path.join(settings.UPLOAD_DIR, filename)
 
     with open(filepath, "wb") as f:
         f.write(file.file.read())
 
     image = ProductImage(
         product_id=product_id,
-        image_url=f"/static/uploads/products/{filename}"
+        image_url=f"/{settings.UPLOAD_DIR}/{filename}"
     )
 
     return repository.add_image(db, image)
