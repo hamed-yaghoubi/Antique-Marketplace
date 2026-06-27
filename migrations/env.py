@@ -1,9 +1,6 @@
 from logging.config import fileConfig
-from src.db.base import Base
-from src.products.models import Product, ProductImage
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-
 from alembic import context
 
 
@@ -31,7 +28,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from src.db.base import Base
 from src.users.models import User
-from src.products.models import Product
+from src.products.models import Product, ProductImage
 from src.cart.models import CartItem
 from src.orders.models import Order, OrderItem
 target_metadata = Base.metadata

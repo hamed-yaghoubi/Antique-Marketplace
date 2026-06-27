@@ -1,4 +1,4 @@
-"""add product images table
+"""create product images table
 
 Revision ID: 7cb76cfcf4b8
 Revises: 207394979f08
