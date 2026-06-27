@@ -11,3 +11,5 @@ wheels/
 
 # Enviornment variables
 .env
+
+node_modules
