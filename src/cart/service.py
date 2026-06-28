@@ -4,7 +4,7 @@ from src.cart.models import CartItem
 from src.cart import repository
 from src.cart.schemas import CartItemCreate, CartItemUpdate, CartResponse
 from src.core.exceptions import CartItemNotFoundError, ForbiddenError, InsufficientStockError, ProductNotFoundError
-from src.products.repository import get_by_id as get_product_by_id
+from src.products import repository as products_repository
 from src.users.models import User
 
 
@@ -25,7 +25,7 @@ def get_cart(db: Session, current_user: User) -> CartResponse:
 
 def add_item(db: Session, data: CartItemCreate, current_user: User) -> CartItem:
 
-    product = get_product_by_id(db, data.product_id)
+    product = products_repository.get_by_id(db, data.product_id)
 
     if product is None:
         raise ProductNotFoundError()
