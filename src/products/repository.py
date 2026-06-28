@@ -22,8 +22,7 @@ def get_filtered(db: Session, filters: ProductFilter, pagination: PaginationPara
         search_term = f"%{filters.search}%"
         query = query.where(
             (Product.title.ilike(search_term)) |
-            (Product.description.ilike(search_term)) |
-            (Product.sku.ilike(search_term))
+            (Product.description.ilike(search_term))
         )
 
     if filters.category:

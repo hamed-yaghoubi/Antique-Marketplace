@@ -15,8 +15,6 @@ class Product(Base):
 
     description: Mapped[str] = mapped_column(Text)
 
-    sku: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), index=True)
 
     quantity: Mapped[int]

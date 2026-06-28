@@ -13,7 +13,6 @@ class ProductImageResponse(BaseModel):
 class ProductBase(BaseModel):
     title: str
     description: str
-    sku: str
     price: Decimal
     quantity: int
     category: ProductCategory
@@ -36,7 +35,6 @@ class ProductResponse(ProductBase):
 class ProductUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    sku: str | None = None
     price: Decimal | None = None
     quantity: int | None = None
     category: ProductCategory | None = None
@@ -46,7 +44,6 @@ class ProductUpdate(BaseModel):
 class ProductCard(BaseModel):
     id: int
     title: str
-    sku: str
     price: Decimal
     category: ProductCategory
     is_active: bool
