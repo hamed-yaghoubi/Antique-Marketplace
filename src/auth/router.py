@@ -1,5 +1,4 @@
-import math
-from fastapi import APIRouter, HTTPException, Query, Response, status, Depends, Request
+from fastapi import APIRouter, HTTPException, Response, status, Depends, Request
 from src.auth.schemas import LoginRequest, TokenResponse, ChangePasswordRequest
 from src.auth import service
 from src.core.config import get_settings
@@ -8,12 +7,8 @@ from src.dependencies.auth import CurrentUser
 from src.dependencies.db import DbSession
 from src.dependencies.permissions import require_admin
 from src.products.schemas import (
-    AdminProductCreate,
     AdminProductUpdate,
     ProductResponse,
-    PaginationParams,
-    ProductFilter,
-    PaginatedResponse,
 )
 from src.products import service as products_service
 from src.users.schemas import UserCreate, UserResponse
@@ -99,73 +94,6 @@ admin_router = APIRouter(prefix="/admin", tags=["Admin"])
 
 def get_admin_user(current_user: CurrentUser):
     return require_admin(current_user)
-
-
-@admin_router.get("/products", response_model=PaginatedResponse)
-def list_products(
-    db: DbSession,
-    current_user: dict = Depends(get_admin_user),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    search: str | None = None,
-    category: str | None = None,
-    min_price: float | None = None,
-    max_price: float | None = None,
-    min_quantity: int | None = None,
-    max_quantity: int | None = None,
-    is_active: bool | None = None,
-    seller_id: int | None = None,
-    sort_by: str = "created_at",
-    sort_order: str = "desc",
-):
-    pagination = PaginationParams(page=page, page_size=page_size)
-    filters = ProductFilter(
-        search=search,
-        category=category,
-        min_price=min_price,
-        max_price=max_price,
-        min_quantity=min_quantity,
-        max_quantity=max_quantity,
-        is_active=is_active,
-        seller_id=seller_id,
-        sort_by=sort_by,
-        sort_order=sort_order,
-    )
-
-    products, total = products_service.get_filtered_products(db, filters, pagination)
-    total_pages = math.ceil(total / pagination.page_size) if total > 0 else 0
-
-    return PaginatedResponse(
-        items=[ProductResponse.model_validate(p) for p in products],
-        total=total,
-        page=pagination.page,
-        page_size=pagination.page_size,
-        total_pages=total_pages,
-    )
-
-
-@admin_router.get("/products/{product_id}", response_model=ProductResponse)
-def get_product(
-    product_id: int,
-    db: DbSession,
-    current_user: dict = Depends(get_admin_user),
-):
-    try:
-        return products_service.get_product(db, product_id)
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-
-
-@admin_router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-def create_product(
-    data: AdminProductCreate,
-    db: DbSession,
-    current_user: dict = Depends(get_admin_user),
-):
-    from src.products.models import Product
-
-    product = Product(**data.model_dump())
-    return products_service.repository.create(db, product)
 
 
 @admin_router.patch("/products/{product_id}", response_model=ProductResponse)
