@@ -5,7 +5,8 @@ from src.core.exceptions import InvalidCredentialsError
 from src.dependencies.db import DbSession
 from src.users import repository
 from src.users.models import User
-from fastapi import Depends, Request
+from src.users.role import UserRole
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
@@ -38,3 +39,15 @@ def get_current_user(db: DbSession, token: str = Depends(get_access_token)) -> U
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_admin(current_user: CurrentUser) -> User:
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]

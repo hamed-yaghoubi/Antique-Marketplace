@@ -2,15 +2,9 @@ from fastapi import APIRouter, HTTPException, Response, status, Depends, Request
 from src.auth.schemas import LoginRequest, TokenResponse, ChangePasswordRequest
 from src.auth import service
 from src.core.config import get_settings
-from src.core.exceptions import InvalidCredentialsError, ProductNotFoundError, UserAlreadyExistsError
+from src.core.exceptions import InvalidCredentialsError, UserAlreadyExistsError
 from src.dependencies.auth import CurrentUser
 from src.dependencies.db import DbSession
-from src.dependencies.permissions import require_admin
-from src.products.schemas import (
-    AdminProductUpdate,
-    ProductResponse,
-)
-from src.products import service as products_service
 from src.users.schemas import UserCreate, UserResponse
 
 settings = get_settings()
@@ -87,42 +81,3 @@ def update_password(
         return {"message": "Password changed successfully"}
     except InvalidCredentialsError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.message)
-
-
-admin_router = APIRouter(prefix="/admin", tags=["Admin"])
-
-
-def get_admin_user(current_user: CurrentUser):
-    return require_admin(current_user)
-
-
-@admin_router.patch("/products/{product_id}", response_model=ProductResponse)
-def update_product(
-    product_id: int,
-    data: AdminProductUpdate,
-    db: DbSession,
-    current_user: dict = Depends(get_admin_user),
-):
-    try:
-        product = products_service.get_product(db, product_id)
-
-        update_data = data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(product, field, value)
-
-        return products_service.repository.update(db, product)
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-
-
-@admin_router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(
-    product_id: int,
-    db: DbSession,
-    current_user: dict = Depends(get_admin_user),
-):
-    try:
-        product = products_service.get_product(db, product_id)
-        products_service.repository.delete(db, product)
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
