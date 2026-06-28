@@ -1,14 +1,8 @@
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, model_validator
+from src.core.schemas import TokenResponse
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+Token = TokenResponse
 
 
 class LoginRequest(BaseModel):
