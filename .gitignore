@@ -11,5 +11,5 @@ wheels/
 
 # Enviornment variables
 .env
-
+#frontend modules
 node_modules
