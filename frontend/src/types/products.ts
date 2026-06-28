@@ -8,7 +8,6 @@ export interface ProductImage {
 export interface ProductCard {
   id: number
   title: string
-  sku: string
   price: number
   category: ProductCategory
   is_active: boolean
@@ -26,7 +25,6 @@ export interface Product extends ProductCard {
 export interface ProductCreate {
   title: string
   description: string
-  sku: string
   price: number
   quantity: number
   category: ProductCategory
@@ -35,20 +33,10 @@ export interface ProductCreate {
 export interface ProductUpdate {
   title?: string
   description?: string
-  sku?: string
   price?: number
   quantity?: number
   category?: ProductCategory
   is_active?: boolean
-}
-
-export interface AdminProductCreate extends ProductCreate {
-  seller_id: number
-  is_active: boolean
-}
-
-export interface AdminProductUpdate extends ProductUpdate {
-  seller_id?: number
 }
 
 export interface ProductFilters {

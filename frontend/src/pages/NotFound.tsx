@@ -9,7 +9,7 @@ export function NotFound() {
       <div className="text-center">
         <h1 className="text-7xl font-bold text-antique-gold text-shadow-vintage">{t.notFound.title}</h1>
         <p className="mt-4 text-xl font-semibold text-antique-wood">{t.notFound.message}</p>
-        <p className="mt-2 text-sm text-antique-sepia/60">
+        <p className="mt-2 text-sm text-antique-sepia-light">
           {t.notFound.description}
         </p>
         <div className="mt-6">

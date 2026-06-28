@@ -4,8 +4,6 @@ from src.users.models import User
 from src.users import repository
 from src.users.schemas import UserUpdate
 
-
-
 def get_user(db: Session, user_id: int) -> User:
     user = repository.get_by_id(db, user_id)
 

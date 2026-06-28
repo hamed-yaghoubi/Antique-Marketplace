@@ -10,40 +10,43 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { t } from '@/utils/persian'
 
-const loginSchema = z.object({
-  username: z.string().min(1, t.validation.required),
-  password: z.string().min(1, t.validation.required),
-  remember_me: z.boolean().optional(),
+const registerSchema = z.object({
+  username: z.string().min(3, 'نام کاربری حداقل ۳ کاراکتر باشد'),
+  password: z.string().min(6, 'رمز عبور حداقل ۶ کاراکتر باشد'),
+  confirm_password: z.string().min(1, t.validation.required),
+}).refine((data) => data.password === data.confirm_password, {
+  message: t.auth.passwordMismatch,
+  path: ['confirm_password'],
 })
 
-type LoginForm = z.infer<typeof loginSchema>
+type RegisterForm = z.infer<typeof registerSchema>
 
-export function Login() {
+export function Register() {
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { register: registerUser } = useAuth()
   const navigate = useNavigate()
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       username: '',
       password: '',
-      remember_me: false,
+      confirm_password: '',
     },
   })
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
     try {
-      await login(data.username, data.password)
-      toast.success(t.auth.welcomeBack)
+      await registerUser(data.username, data.password, data.confirm_password)
+      toast.success(t.auth.registerSuccess)
       navigate('/')
     } catch (error) {
-      const message = error instanceof Error ? error.message : t.auth.loginFailed
+      const message = error instanceof Error ? error.message : t.auth.registerFailed
       toast.error(message)
     } finally {
       setIsLoading(false)
@@ -57,8 +60,8 @@ export function Login() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-antique-gold/20 border-2 border-antique-gold/30">
             <Crown className="h-8 w-8 text-antique-gold" />
           </div>
-          <h1 className="text-3xl font-bold text-antique-wood text-shadow-vintage">{t.auth.loginTitle}</h1>
-          <p className="mt-2 text-sm text-antique-sepia-light">{t.auth.loginSubtitle}</p>
+          <h1 className="text-3xl font-bold text-antique-wood text-shadow-vintage">{t.auth.registerTitle}</h1>
+          <p className="mt-2 text-sm text-antique-sepia-light">{t.auth.registerSubtitle}</p>
         </div>
 
         <div className="card">
@@ -81,29 +84,27 @@ export function Login() {
               {...register('password')}
             />
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-antique-gold/30 text-antique-gold focus:ring-antique-gold"
-                  {...register('remember_me')}
-                />
-                <span className="text-sm text-antique-sepia-light">{t.auth.rememberMe}</span>
-              </label>
-            </div>
+            <Input
+              label={t.auth.confirmPassword}
+              type="password"
+              placeholder={t.auth.passwordPlaceholder}
+              error={errors.confirm_password?.message}
+              {...register('confirm_password')}
+            />
 
             <Button type="submit" isLoading={isLoading} className="w-full">
-              {t.auth.signIn}
+              {t.auth.signUp}
             </Button>
           </form>
+
           <div className="mt-4 text-center">
             <span className="ornament text-sm">— ✦ —</span>
           </div>
 
           <p className="mt-4 text-center text-sm text-antique-sepia-light">
-            {t.auth.noAccount}{' '}
-            <Link to="/register" className="font-semibold text-antique-gold hover:text-antique-gold-dark transition-colors">
-              {t.auth.signUp}
+            {t.auth.hasAccount}{' '}
+            <Link to="/login" className="font-semibold text-antique-gold hover:text-antique-gold-dark transition-colors">
+              {t.auth.signIn}
             </Link>
           </p>
         </div>

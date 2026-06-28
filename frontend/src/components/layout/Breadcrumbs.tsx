@@ -18,7 +18,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav className="mb-6 flex items-center gap-1 text-sm text-antique-sepia/60">
+    <nav className="mb-6 flex items-center gap-1 text-sm text-antique-sepia-light">
       <Link to="/" className="hover:text-antique-gold transition-colors">
         <Home className="h-4 w-4" />
       </Link>

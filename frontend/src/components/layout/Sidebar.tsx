@@ -1,11 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingCart, Crown, Shield } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, Crown, Shield, ListOrdered, User, Store } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { t } from '@/utils/persian'
 
-const navItems = [
-  { to: '/', icon: Package, label: t.nav.products },
+const publicItems = [
+  { to: '/', icon: Package, label: t.nav.products, end: true },
+]
+
+const authItems = [
   { to: '/cart', icon: ShoppingCart, label: t.nav.cart },
+  { to: '/orders', icon: ListOrdered, label: t.nav.orders },
+  { to: '/my-products', icon: Store, label: t.nav.myProducts },
 ]
 
 const adminItems = [
@@ -14,7 +19,7 @@ const adminItems = [
 ]
 
 export function Sidebar() {
-  const { isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin } = useAuth()
 
   return (
     <aside className="fixed right-0 top-0 z-40 h-screen w-64 sidebar-style">
@@ -32,16 +37,16 @@ export function Sidebar() {
         <div className="mb-3 px-3 text-xs font-semibold text-antique-gold/50">
           {t.layout.marketplace}
         </div>
-        {navItems.map((item) => (
+        {publicItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/'}
+            end={item.end}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-antique-gold/20 text-antique-gold shadow-sm'
-                  : 'text-antique-cream/70 hover:bg-antique-gold/10 hover:text-antique-gold'
+                  : 'text-antique-cream hover:bg-antique-gold/10 hover:text-antique-gold'
               }`
             }
           >
@@ -49,6 +54,43 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+
+        {isAuthenticated && (
+          <>
+            <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
+              {t.nav.profile}
+            </div>
+            {authItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-antique-gold/20 text-antique-gold shadow-sm'
+                      : 'text-antique-cream hover:bg-antique-gold/10 hover:text-antique-gold'
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </NavLink>
+            ))}
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-antique-gold/20 text-antique-gold shadow-sm'
+                    : 'text-antique-cream hover:bg-antique-gold/10 hover:text-antique-gold'
+                }`
+              }
+            >
+              <User className="h-5 w-5" />
+              {t.nav.profile}
+            </NavLink>
+          </>
+        )}
 
         {isAdmin && (
           <>
@@ -64,7 +106,7 @@ export function Sidebar() {
                   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                     isActive
                       ? 'bg-antique-gold/20 text-antique-gold shadow-sm'
-                      : 'text-antique-cream/70 hover:bg-antique-gold/10 hover:text-antique-gold'
+                      : 'text-antique-cream hover:bg-antique-gold/10 hover:text-antique-gold'
                   }`
                 }
               >

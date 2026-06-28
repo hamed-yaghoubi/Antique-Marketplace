@@ -1,8 +1,16 @@
 from pydantic import BaseModel, model_validator
-from src.core.schemas import TokenResponse
+from datetime import datetime
+
+class TokenPayload(BaseModel):
+    sub: str
+    exp: datetime
+    type: str  # "access" or "refresh"
 
 
-Token = TokenResponse
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 
 class LoginRequest(BaseModel):

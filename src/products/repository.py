@@ -55,7 +55,9 @@ def get_filtered(db: Session, filters: ProductFilter, pagination: PaginationPara
     count_query = select(func.count()).select_from(query.subquery())
     total = db.execute(count_query).scalar()
 
-    sort_column = getattr(Product, filters.sort_by, Product.created_at)
+    allowed_sort_columns = {"created_at", "price", "title", "quantity"}
+    sort_by = filters.sort_by if filters.sort_by in allowed_sort_columns else "created_at"
+    sort_column = getattr(Product, sort_by)
     if filters.sort_order == "asc":
         query = query.order_by(sort_column.asc())
     else:

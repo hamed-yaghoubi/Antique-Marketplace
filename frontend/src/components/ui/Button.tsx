@@ -11,7 +11,7 @@ const variantClasses = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
   danger: 'btn-danger',
-  ghost: 'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
+  ghost: 'inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-antique-sepia-light transition-all hover:bg-antique-cream-dark',
 }
 
 const sizeClasses = {

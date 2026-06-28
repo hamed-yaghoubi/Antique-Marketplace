@@ -1,5 +1,5 @@
 import api from './axios'
-import type { LoginRequest, TokenResponse, User, RegisterRequest } from '@/types/auth'
+import type { LoginRequest, TokenResponse, User, RegisterRequest, ChangePasswordRequest } from '@/types/auth'
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<TokenResponse> => {
@@ -18,6 +18,11 @@ export const authApi = {
 
   getMe: async (): Promise<User> => {
     const response = await api.get('/auth/me')
+    return response.data
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
+    const response = await api.patch('/auth/change-password', data)
     return response.data
   },
 }

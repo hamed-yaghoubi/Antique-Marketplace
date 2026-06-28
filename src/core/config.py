@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     COOKIE_MAX_AGE: int = 604800
     COOKIE_SECURE: bool = True
     COOKIE_SAMESITE: str = "strict"
+    CORS_ORIGINS: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env")
 

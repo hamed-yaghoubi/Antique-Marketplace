@@ -1,9 +1,9 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   requireAdmin?: boolean
 }
 
@@ -26,5 +26,5 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     return <Navigate to="/" replace />
   }
 
-  return <>{children}</>
+  return children ? <>{children}</> : <Outlet />
 }

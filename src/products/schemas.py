@@ -54,12 +54,17 @@ class ProductCard(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def extract_main_image(cls, data):
-        images = data.get("images", [])
-        if isinstance(images, list) and images:
-            data["main_image"] = images[0]
-        else:
-            data["main_image"] = None
-        return data
+        if isinstance(data, dict):
+            images = data.get("images", [])
+            data["main_image"] = images[0] if images else None
+            return data
+
+        images = getattr(data, "images", None) or []
+        result = {}
+        for key in ["id", "title", "price", "category", "is_active"]:
+            result[key] = getattr(data, key)
+        result["main_image"] = images[0] if images else None
+        return result
 
 
 class PaginationParams(BaseModel):
@@ -88,23 +93,3 @@ class PaginatedResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
-
-
-class AdminProductCreate(BaseModel):
-    title: str
-    description: str
-    price: Decimal
-    quantity: int
-    category: ProductCategory
-    seller_id: int
-    is_active: bool = True
-
-
-class AdminProductUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    price: Decimal | None = None
-    quantity: int | None = None
-    category: ProductCategory | None = None
-    seller_id: int | None = None
-    is_active: bool | None = None

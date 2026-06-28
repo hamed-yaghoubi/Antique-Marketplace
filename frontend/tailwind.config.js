@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -18,8 +17,9 @@ export default {
           bronze: '#CD7F32',
           'bronze-light': '#D4914A',
           'bronze-dark': '#B8702A',
-          sepia: '#704214',
-          'sepia-light': '#8B5A2B',
+          sepia: '#5C3A1E',
+          'sepia-light': '#8B6238',
+          'sepia-dark': '#3D2510',
           parchment: '#F4E8D1',
           ink: '#2C1810',
         },

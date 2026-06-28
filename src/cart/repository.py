@@ -1,6 +1,7 @@
 from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from src.cart.models import CartItem
+from src.products.models import Product
 
 
 def get_by_id(db: Session, item_id: int) -> CartItem | None:
@@ -8,7 +9,11 @@ def get_by_id(db: Session, item_id: int) -> CartItem | None:
 
 
 def get_by_user_id(db: Session, user_id: int) -> list[CartItem]:
-    query = select(CartItem).where(CartItem.user_id == user_id)
+    query = (
+        select(CartItem)
+        .where(CartItem.user_id == user_id)
+        .options(selectinload(CartItem.product).selectinload(Product.images))
+    )
     result = db.execute(query).scalars().all()
     return result
 

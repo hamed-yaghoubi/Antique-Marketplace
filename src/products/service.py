@@ -64,24 +64,37 @@ def delete_product(db: Session, product_id: int, current_user: User) -> None:
     repository.delete(db, product)
 
 
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
+
+
 def upload_product_image(db: Session, product_id: int, file: UploadFile, current_user: User) -> ProductImage:
     product = get_product(db, product_id)
 
     if product.seller_id != current_user.id:
         raise ForbiddenError()
 
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' not allowed. Use: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
+
+    content = file.file.read()
+    if len(content) > MAX_IMAGE_SIZE:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_IMAGE_SIZE // (1024*1024)}MB")
+
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-    ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid.uuid4().hex}{ext}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
 
     with open(filepath, "wb") as f:
-        f.write(file.file.read())
+        f.write(content)
 
     image = ProductImage(
         product_id=product_id,
-        image_url=f"/{settings.UPLOAD_DIR}/{filename}"
+        image_url=f"/{settings.UPLOAD_DIR.rstrip('/')}/{filename}"
     )
 
     return repository.add_image(db, image)

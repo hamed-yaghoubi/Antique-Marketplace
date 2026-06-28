@@ -7,6 +7,9 @@ from src.admin.router import router as admin_router
 from src.cart.router import router as cart_router
 from src.orders.router import router as orders_router
 from src.products.router import router as products_router
+from src.core.config import get_settings
+
+settings = get_settings()
 
 app = FastAPI(
     title="Antik Marketplace",
@@ -23,7 +26,7 @@ app.include_router(orders_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

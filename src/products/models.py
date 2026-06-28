@@ -38,7 +38,9 @@ class ProductImage(Base):
     __tablename__ = "product_images"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    
     image_url: Mapped[str] = mapped_column(String(500))
 
     product: Mapped["Product"] = relationship(back_populates="images")

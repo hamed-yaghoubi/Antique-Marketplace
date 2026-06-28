@@ -4,9 +4,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, X, Image } from 'lucide-react'
+import { Plus, Pencil, Trash2, Upload, X, Image } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
-import { adminApi } from '@/api/admin.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -14,8 +13,8 @@ import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
-import { t, toPersianNumbers, formatPrice } from '@/utils/persian'
-import type { ProductCard, ProductFilters, ProductCategory, ProductCreate, ProductUpdate, ProductImage } from '@/types/products'
+import { t, formatPrice } from '@/utils/persian'
+import type { ProductCard, ProductCategory, ProductCreate, ProductUpdate, ProductImage } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'coin', label: 'سکه' },
@@ -35,10 +34,9 @@ const productSchema = z.object({
 
 type ProductForm = z.infer<typeof productSchema>
 
-export function AdminProducts() {
+export function MyProducts() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [filters, setFilters] = useState<ProductFilters>({ page: 1, page_size: 10, sort_by: 'created_at', sort_order: 'desc' })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
@@ -46,9 +44,9 @@ export function AdminProducts() {
   const [existingImages, setExistingImages] = useState<ProductImage[]>([])
   const [isUploading, setIsUploading] = useState(false)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-products', filters],
-    queryFn: () => productsApi.getProducts(filters),
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['my-products'],
+    queryFn: productsApi.getMyProducts,
   })
 
   const {
@@ -82,7 +80,7 @@ export function AdminProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productCreated)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      queryClient.invalidateQueries({ queryKey: ['my-products'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setSelectedFiles([])
       closeModal()
@@ -105,7 +103,7 @@ export function AdminProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productUpdated)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      queryClient.invalidateQueries({ queryKey: ['my-products'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
       setSelectedFiles([])
@@ -115,10 +113,10 @@ export function AdminProducts() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.deleteProduct(id),
+    mutationFn: (id: number) => productsApi.deleteProduct(id),
     onSuccess: () => {
       toast.success(t.admin.productDeleted)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      queryClient.invalidateQueries({ queryKey: ['my-products'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setDeleteId(null)
     },
@@ -132,7 +130,7 @@ export function AdminProducts() {
       toast.success(t.admin.imageDeleted)
       setExistingImages((prev) => prev.filter((img) => img.id !== variables.imageId))
       queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
+      queryClient.invalidateQueries({ queryKey: ['my-products'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
     },
     onError: () => toast.error(t.admin.imageDeleteFailed),
@@ -202,54 +200,18 @@ export function AdminProducts() {
     }
   }
 
-  const updateFilter = (key: keyof ProductFilters, value: string | number | boolean | undefined) => {
-    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }))
-  }
-
   return (
     <div>
       <Breadcrumbs />
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.admin.manageTitle}</h1>
+          <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.products.myProducts}</h1>
           <p className="mt-1 text-sm text-antique-sepia-light">{t.admin.manageSubtitle}</p>
         </div>
         <Button onClick={openCreateModal}>
           <Plus className="h-4 w-4" />
           {t.admin.addProduct}
         </Button>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
-            <input
-              type="text"
-              placeholder={t.products.search}
-              className="input-field pr-10"
-              value={filters.search || ''}
-              onChange={(e) => updateFilter('search', e.target.value || undefined)}
-            />
-          </div>
-        </div>
-        <Select
-          options={categories}
-          placeholder={t.products.allCategories}
-          value={filters.category || ''}
-          onChange={(e) => updateFilter('category', e.target.value || undefined)}
-          className="w-auto"
-        />
-        <Select
-          options={[
-            { value: 'true', label: t.products.active },
-            { value: 'false', label: t.products.inactive },
-          ]}
-          placeholder={t.products.all}
-          value={filters.is_active?.toString() || ''}
-          onChange={(e) => updateFilter('is_active', e.target.value ? e.target.value === 'true' : undefined)}
-          className="w-auto"
-        />
       </div>
 
       {isLoading ? (
@@ -262,13 +224,12 @@ export function AdminProducts() {
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.product}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.categoryLabel}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.priceLabel}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.admin.stock}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.statusLabel}</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-antique-wood">{t.admin.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-antique-gold/10">
-              {data?.items.map((product) => (
+              {products?.map((product) => (
                 <tr key={product.id} className="transition-colors hover:bg-antique-gold/5">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -282,7 +243,9 @@ export function AdminProducts() {
                       <span className="font-semibold text-antique-wood">{product.title}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4"><Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge></td>
+                  <td className="px-6 py-4">
+                    <Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge>
+                  </td>
                   <td className="px-6 py-4 text-sm font-bold text-antique-wood">{formatPrice(product.price)}</td>
                   <td className="px-6 py-4">
                     <Badge variant={product.is_active ? 'success' : 'warning'}>
@@ -291,41 +254,25 @@ export function AdminProducts() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEditModal(product as ProductCard)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors">
+                      <button onClick={() => openEditModal(product)} className="rounded-lg p-1.5 text-antique-sepia hover:bg-antique-gold/10 hover:text-antique-gold transition-colors">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDeleteId(product.id)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-red-100 hover:text-red-600 transition-colors">
+                      <button onClick={() => setDeleteId(product.id)} className="rounded-lg p-1.5 text-antique-sepia hover:bg-red-100 hover:text-red-600 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {data?.items.length === 0 && (
+              {(!products || products.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-antique-sepia-light">
+                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-antique-sepia">
                     {t.products.noProducts}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {data && data.total_pages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-antique-sepia-light">
-            {t.products.page} {toPersianNumbers(data.page)} {t.products.of} {toPersianNumbers(data.total_pages)} ({toPersianNumbers(data.total)} مورد)
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" disabled={data.page >= data.total_pages} onClick={() => updateFilter('page', data.page + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="secondary" size="sm" disabled={data.page <= 1} onClick={() => updateFilter('page', data.page - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       )}
 
@@ -397,9 +344,7 @@ export function AdminProducts() {
       </Modal>
 
       <Modal isOpen={deleteId !== null} onClose={() => setDeleteId(null)} title={t.admin.deleteProduct} size="sm">
-        <p className="text-sm text-antique-sepia-light">
-          {t.admin.deleteConfirm}
-        </p>
+        <p className="text-sm text-antique-sepia-light">{t.admin.deleteConfirm}</p>
         <div className="flex justify-start gap-3 mt-6">
           <Button variant="secondary" onClick={() => setDeleteId(null)}>{t.admin.cancel}</Button>
           <Button variant="danger" isLoading={deleteMutation.isPending} onClick={() => deleteId && deleteMutation.mutate(deleteId)}>

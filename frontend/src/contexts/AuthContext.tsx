@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   login: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -43,6 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refreshUser()
   }
 
+  const register = async (username: string, password: string, confirmPassword: string) => {
+    await authApi.register({ username, password, confirm_password: confirmPassword })
+    const data = await authApi.login({ username, password })
+    localStorage.setItem('access_token', data.access_token)
+    await refreshUser()
+  }
+
   const logout = async () => {
     try {
       await authApi.logout()
@@ -60,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         login,
+        register,
         logout,
         refreshUser,
       }}

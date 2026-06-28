@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { productsApi } from '@/api/products.api'
+import { cartApi } from '@/api/cart.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
-import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { t, toPersianNumbers, formatPrice } from '@/utils/persian'
 import type { ProductFilters, ProductCategory } from '@/types/products'
 
@@ -28,15 +31,28 @@ const sortOptions = [
 export function Products() {
   const [filters, setFilters] = useState<ProductFilters>({
     page: 1,
-    page_size: 10,
+    page_size: 12,
     sort_by: 'created_at',
     sort_order: 'desc',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const { isAuthenticated } = useAuth()
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', filters],
     queryFn: () => productsApi.getProducts(filters),
+  })
+
+  const addToCartMutation = useMutation({
+    mutationFn: (productId: number) => cartApi.addItem({ product_id: productId, quantity: 1 }),
+    onSuccess: () => {
+      toast.success(t.cart.itemAdded)
+      queryClient.invalidateQueries({ queryKey: ['cart'] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t.cart.addToCartFailed)
+    },
   })
 
   const updateFilter = (key: keyof ProductFilters, value: string | number | boolean | undefined) => {
@@ -49,7 +65,7 @@ export function Products() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.products.title}</h1>
-          <p className="mt-1 text-sm text-antique-sepia/60">{t.products.subtitle}</p>
+          <p className="mt-1 text-sm text-antique-sepia-light">{t.products.subtitle}</p>
         </div>
         <Button variant="secondary" onClick={() => setShowFilters(!showFilters)}>
           <SlidersHorizontal className="h-4 w-4" />
@@ -60,7 +76,7 @@ export function Products() {
       <div className="mb-4 flex flex-wrap gap-3">
         <div className="flex-1 min-w-[200px]">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia/40" />
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
             <input
               type="text"
               placeholder={t.products.search}
@@ -97,20 +113,26 @@ export function Products() {
               value={filters.category || ''}
               onChange={(e) => updateFilter('category', e.target.value || undefined)}
             />
-            <Input
-              label={t.products.minPrice}
-              type="number"
-              placeholder="۰"
-              value={filters.min_price || ''}
-              onChange={(e) => updateFilter('min_price', e.target.value ? Number(e.target.value) : undefined)}
-            />
-            <Input
-              label={t.products.maxPrice}
-              type="number"
-              placeholder="۹۹۹۹"
-              value={filters.max_price || ''}
-              onChange={(e) => updateFilter('max_price', e.target.value ? Number(e.target.value) : undefined)}
-            />
+            <div className="space-y-1.5">
+              <label className="label">{t.products.minPrice}</label>
+              <input
+                type="number"
+                placeholder="۰"
+                className="input-field"
+                value={filters.min_price || ''}
+                onChange={(e) => updateFilter('min_price', e.target.value ? Number(e.target.value) : undefined)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="label">{t.products.maxPrice}</label>
+              <input
+                type="number"
+                placeholder="۹۹۹۹"
+                className="input-field"
+                value={filters.max_price || ''}
+                onChange={(e) => updateFilter('max_price', e.target.value ? Number(e.target.value) : undefined)}
+              />
+            </div>
             <Select
               label={t.products.status}
               options={[
@@ -121,80 +143,73 @@ export function Products() {
               value={filters.is_active?.toString() || ''}
               onChange={(e) => updateFilter('is_active', e.target.value ? e.target.value === 'true' : undefined)}
             />
-            <Input
-              label={t.products.minStock}
-              type="number"
-              placeholder="۰"
-              value={filters.min_quantity || ''}
-              onChange={(e) => updateFilter('min_quantity', e.target.value ? Number(e.target.value) : undefined)}
-            />
-            <Input
-              label={t.products.maxStock}
-              type="number"
-              placeholder="۹۹۹"
-              value={filters.max_quantity || ''}
-              onChange={(e) => updateFilter('max_quantity', e.target.value ? Number(e.target.value) : undefined)}
-            />
           </div>
         </div>
       )}
 
       {isLoading ? (
-        <TableSkeleton rows={5} cols={5} />
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : data?.items.length === 0 ? (
+        <div className="card py-16 text-center">
+          <p className="text-lg font-semibold text-antique-wood">{t.products.noProducts}</p>
+          <p className="mt-2 text-sm text-antique-sepia-light">{t.products.subtitle}</p>
+        </div>
       ) : (
-        <div className="card overflow-hidden p-0">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b-2 border-antique-gold/20 bg-antique-gold/5">
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.product}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.sku}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.categoryLabel}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.priceLabel}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.statusLabel}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-antique-gold/10">
-              {data?.items.map((product) => (
-                <tr key={product.id} className="transition-colors hover:bg-antique-gold/5">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {product.main_image ? (
-                        <img src={product.main_image.image_url} alt={product.title} className="h-10 w-10 rounded-lg object-cover border border-antique-gold/20" />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-antique-gold/10 border border-antique-gold/20">
-                          <span className="text-[10px] text-antique-sepia/50">{t.products.noImage}</span>
-                        </div>
-                      )}
-                      <span className="font-semibold text-antique-wood">{product.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-antique-sepia/70">{toPersianNumbers(product.sku)}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-bold text-antique-wood">{formatPrice(product.price)}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant={product.is_active ? 'success' : 'warning'}>
-                      {product.is_active ? t.products.active : t.products.inactive}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-              {data?.items.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-antique-sepia/50">
-                    {t.products.noProducts}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {data?.items.map((product) => (
+            <div key={product.id} className="card group overflow-hidden p-0 transition-all hover:shadow-vintage-lg">
+              <div className="relative aspect-square overflow-hidden bg-antique-gold/5">
+                {product.main_image ? (
+                  <img
+                    src={product.main_image.image_url}
+                    alt={product.title}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-sm text-antique-sepia">{t.products.noImage}</span>
+                  </div>
+                )}
+                <div className="absolute left-3 top-3">
+                  <Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge>
+                </div>
+              </div>
+              <div className="p-4">
+                <Link to={`/products/${product.id}`}>
+                  <h3 className="font-bold text-antique-wood hover:text-antique-gold transition-colors line-clamp-1">
+                    {product.title}
+                  </h3>
+                </Link>
+                <p className="mt-1 text-lg font-bold text-antique-gold">{formatPrice(product.price)}</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <Link to={`/products/${product.id}`} className="flex-1">
+                    <Button variant="secondary" size="sm" className="w-full">
+                      {t.products.viewDetails}
+                    </Button>
+                  </Link>
+                  {isAuthenticated && (
+                    <Button
+                      size="sm"
+                      onClick={() => addToCartMutation.mutate(product.id)}
+                      isLoading={addToCartMutation.isPending}
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {data && data.total_pages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-antique-sepia/60">
+        <div className="mt-6 flex items-center justify-between">
+          <p className="text-sm text-antique-sepia-light">
             {t.products.showing} {toPersianNumbers(((data.page - 1) * data.page_size) + 1)} {t.products.to} {toPersianNumbers(Math.min(data.page * data.page_size, data.total))} {t.products.from} {toPersianNumbers(data.total)} {t.products.results}
           </p>
           <div className="flex items-center gap-2">
