@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 import jwt
-import secrets
 from pwdlib import PasswordHash
 from src.core.config import get_settings
 
@@ -28,7 +27,8 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
 
     payload: dict[str, Any] = {
         "sub": subject,
-        "exp": expire
+        "exp": expire,
+        "type": "access"
     }
 
     return jwt.encode(
@@ -46,5 +46,25 @@ def decode_access_token(token: str) -> dict[str, Any]:
     )
 
 
-def create_refresh_token() -> str:
-    return secrets.token_urlsafe(64)
+def create_refresh_token(subject: str) -> str:
+    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "exp": expire,
+        "type": "refresh"
+    }
+
+    return jwt.encode(
+        payload,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
+    )
+
+
+def decode_refresh_token(token: str) -> dict[str, Any]:
+    return jwt.decode(
+        token,
+        settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM]
+    )
