@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from src.core.exceptions import ForbiddenError, ProductNotFoundError
