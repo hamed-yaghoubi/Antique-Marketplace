@@ -1,4 +1,5 @@
-from fastapi import UploadFile
+from fastapi import HTTPException, status
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from src.core.exceptions import ForbiddenError, ProductNotFoundError
 from src.products.models import Product, ProductImage
@@ -9,6 +10,7 @@ import os, uuid
 from src.core.config import get_settings
 
 settings = get_settings()
+
 
 def get_product(db: Session, product_id: int) -> Product:
 
@@ -61,11 +63,15 @@ def delete_product(db: Session, product_id: int, current_user: User) -> None:
     if product.seller_id != current_user.id:
         raise ForbiddenError()
 
+    order_item_count = repository.count_order_items(db, product_id)
+
+    if order_item_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot delete product: it is referenced in {order_item_count} order(s)."
+        )
+
     repository.delete(db, product)
-
-
-ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 
 def upload_product_image(db: Session, product_id: int, file: UploadFile, current_user: User) -> ProductImage:
@@ -74,15 +80,16 @@ def upload_product_image(db: Session, product_id: int, file: UploadFile, current
     if product.seller_id != current_user.id:
         raise ForbiddenError()
 
+    allowed_exts = settings.allowed_image_extensions_set
     ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_IMAGE_EXTENSIONS:
+    if ext not in allowed_exts:
         from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail=f"File type '{ext}' not allowed. Use: {', '.join(ALLOWED_IMAGE_EXTENSIONS)}")
+        raise HTTPException(status_code=400, detail=f"File type '{ext}' not allowed. Use: {', '.join(allowed_exts)}")
 
     content = file.file.read()
-    if len(content) > MAX_IMAGE_SIZE:
+    if len(content) > settings.MAX_IMAGE_SIZE:
         from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_IMAGE_SIZE // (1024*1024)}MB")
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {settings.MAX_IMAGE_SIZE // (1024*1024)}MB")
 
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 

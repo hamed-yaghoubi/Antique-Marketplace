@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = True
     COOKIE_SAMESITE: str = "strict"
     CORS_ORIGINS: str = "http://localhost:3000"
+    ALLOWED_IMAGE_EXTENSIONS: str = ".jpg,.jpeg,.png,.gif,.webp"
+    MAX_IMAGE_SIZE: int = 5242880
+
+    @property
+    def allowed_image_extensions_set(self) -> set[str]:
+        return {ext.strip() for ext in self.ALLOWED_IMAGE_EXTENSIONS.split(",")}
 
     model_config = SettingsConfigDict(env_file=".env")
 

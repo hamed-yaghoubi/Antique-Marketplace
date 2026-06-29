@@ -2,6 +2,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from src.products.models import Product, ProductImage
 from src.products.schemas import ProductFilter, PaginationParams
+from src.orders.models import OrderItem
+
 
 
 def get_by_id(db: Session, product_id: int) -> Product | None:
@@ -107,3 +109,12 @@ def get_image_by_id(db: Session, image_id: int) -> ProductImage | None:
 def delete_image(db: Session, image: ProductImage) -> None:
     db.delete(image)
     db.commit()
+
+
+def count_order_items(db: Session, product_id: int) -> int:
+    query = (
+        select(func.count())
+        .select_from(OrderItem)
+        .where(OrderItem.product_id == product_id)
+    )
+    return db.execute(query).scalar() or 0

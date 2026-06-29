@@ -30,7 +30,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_products_is_active'), 'products', ['is_active'], unique=False)
     op.create_index(op.f('ix_products_price'), 'products', ['price'], unique=False)
     op.create_index(op.f('ix_products_seller_id'), 'products', ['seller_id'], unique=False)
-    op.add_column('users', sa.Column('role', sa.Enum('USER', 'ADMIN', name='userrole'), nullable=False, server_default='USER'))
+    op.add_column('users', sa.Column('role', sa.Enum('USER', 'ADMIN', "OWNER", name='userrole'), nullable=False, server_default='USER'))
     # ### end Alembic commands ###
 
 

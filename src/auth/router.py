@@ -48,16 +48,20 @@ def login_user(data: LoginRequest, db: DbSession, response: Response):
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(
     response: Response,
+    db: DbSession,
     refresh_token_value: str | None = Depends(get_refresh_token_from_cookie),
 ):
     if not refresh_token_value:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token provided")
 
     try:
-        tokens = service.refresh_tokens(refresh_token_value)
+        tokens = service.refresh_tokens(db, refresh_token_value)
         set_refresh_cookie(response, tokens.refresh_token)
         return tokens
-    except InvalidCredentialsError:
+    except HTTPException as e:
+        response.delete_cookie(key=settings.REFRESH_TOKEN_COOKIE_NAME, path=settings.COOKIE_PATH)
+        raise e
+    except Exception:
         response.delete_cookie(key=settings.REFRESH_TOKEN_COOKIE_NAME, path=settings.COOKIE_PATH)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
