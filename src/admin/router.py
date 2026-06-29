@@ -5,7 +5,8 @@ from src.core.exceptions import ProductNotFoundError, UserNotFoundError
 from src.dependencies.auth import CurrentAdmin
 from src.dependencies.db import DbSession
 from src.products import service as products_service
-from src.products.schemas import ProductResponse
+from src.users.role import UserRole
+from src.users import repository as users_repository
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -26,7 +27,7 @@ def get_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
 @router.patch("/users/{user_id}/role", response_model=UserResponse)
 def update_user_role(user_id: int, data: UserUpdateRole, db: DbSession, current_admin: CurrentAdmin):
     try:
-        return service.update_user_role(db, user_id, data.role)
+        return service.update_user_role(db, user_id, data.role, current_admin)
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
@@ -34,7 +35,7 @@ def update_user_role(user_id: int, data: UserUpdateRole, db: DbSession, current_
 @router.patch("/users/{user_id}/ban", response_model=UserResponse)
 def ban_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
     try:
-        return service.ban_user(db, user_id)
+        return service.ban_user(db, user_id, current_admin)
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
@@ -42,7 +43,7 @@ def ban_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
 @router.patch("/users/{user_id}/unban", response_model=UserResponse)
 def unban_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
     try:
-        return service.unban_user(db, user_id)
+        return service.unban_user(db, user_id, current_admin)
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
@@ -51,6 +52,12 @@ def unban_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
 def delete_product(product_id: int, db: DbSession, current_admin: CurrentAdmin):
     try:
         product = products_service.get_product(db, product_id)
+        seller = users_repository.get_by_id(db, product.seller_id)
+        if current_admin.role == UserRole.ADMIN and seller and seller.role in (UserRole.ADMIN, UserRole.OWNER):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admins cannot delete products belonging to admins or owners"
+            )
         products_service.repository.delete(db, product)
     except ProductNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
