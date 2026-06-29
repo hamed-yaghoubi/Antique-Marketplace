@@ -7,22 +7,22 @@ export const adminApi = {
   },
 
   getUsers: async (): Promise<User[]> => {
-    const { data } = await api.get<User[]>('/admin/users')
-    return data
+    const response = await api.get<User[]>('/admin/users')
+    return response.data
   },
 
   updateUserRole: async (userId: number, role: 'user' | 'admin'): Promise<User> => {
-    const { data } = await api.patch<User>(`/admin/users/${userId}/role`, { role })
-    return data
+    const response = await api.patch<User>(`/admin/users/${userId}/role`, { role })
+    return response.data
   },
 
   banUser: async (userId: number): Promise<User> => {
-    const { data } = await api.patch<User>(`/admin/users/${userId}/ban`)
-    return data
+    const response = await api.patch<User>(`/admin/users/${userId}/ban`)
+    return response.data
   },
 
   unbanUser: async (userId: number): Promise<User> => {
-    const { data } = await api.patch<User>(`/admin/users/${userId}/unban`)
-    return data
+    const response = await api.patch<User>(`/admin/users/${userId}/unban`)
+    return response.data
   },
 }
