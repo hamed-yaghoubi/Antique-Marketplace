@@ -84,17 +84,9 @@ export function AdminUsers() {
                     <span className="font-semibold text-antique-wood">{user.username}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="relative">
-                      <select
-                        value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
-                        className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold"
-                      >
-                        <option value="user">{t.admin.userRole}</option>
-                        <option value="admin">{t.admin.adminRole}</option>
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
-                    </div>
+                    <Badge variant={user.role === 'admin' ? 'info' : 'default'}>
+                      {user.role === 'admin' ? t.admin.adminRole : t.admin.userRole}
+                    </Badge>
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={user.is_active ? 'success' : 'danger'}>
@@ -106,6 +98,17 @@ export function AdminUsers() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
+                          className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold"
+                        >
+                          <option value="user">{t.admin.userRole}</option>
+                          <option value="admin">{t.admin.adminRole}</option>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
+                      </div>
                       {user.is_active ? (
                         <button
                           onClick={() => setBanTarget(user)}
@@ -153,7 +156,7 @@ export function AdminUsers() {
         <p className="text-sm text-antique-sepia-light">{t.admin.confirmUnban}</p>
         <div className="flex justify-start gap-3 mt-6">
           <Button variant="secondary" onClick={() => setUnbanTarget(null)}>{t.admin.cancel}</Button>
-          <Button variant="danger" isLoading={unbanMutation.isPending} onClick={() => unbanTarget && unbanMutation.mutate(unbanTarget.id)}>
+          <Button variant="primary" isLoading={unbanMutation.isPending} onClick={() => unbanTarget && unbanMutation.mutate(unbanTarget.id)}>
             {t.admin.unban}
           </Button>
         </div>
