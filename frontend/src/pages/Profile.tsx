@@ -73,8 +73,8 @@ export function Profile() {
             <div>
               <h2 className="text-xl font-bold text-antique-wood">{user?.username}</h2>
               <div className="mt-1 flex items-center gap-2">
-                <Badge variant={user?.role === 'admin' ? 'info' : 'default'}>
-                  {user?.role === 'admin' ? 'مدیر' : 'کاربر'}
+                <Badge variant={user?.role === 'owner' ? 'warning' : user?.role === 'admin' ? 'info' : 'default'}>
+                  {user?.role === 'owner' ? 'مالک' : user?.role === 'admin' ? 'مدیر' : 'کاربر'}
                 </Badge>
               </div>
             </div>

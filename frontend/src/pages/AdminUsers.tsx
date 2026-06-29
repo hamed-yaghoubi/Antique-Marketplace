@@ -70,6 +70,11 @@ export function AdminUsers() {
     return target.role === 'user'
   }
 
+  const canChangeRole = (target: User) => {
+    if (isOwner) return target.role !== 'owner'
+    return target.role === 'user'
+  }
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'owner':
@@ -132,20 +137,22 @@ export function AdminUsers() {
                             <UserCheck className="h-4 w-4" />
                           </button>
                         )}
+                        {canChangeRole(user) && (
+                          <div className="relative">
+                            <select
+                              value={user.role}
+                              onChange={(e) => roleMutation.mutate({ userId: user.id, role: e.target.value as 'user' | 'admin' })}
+                              disabled={roleMutation.isPending}
+                              className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
+                            >
+                              <option value="user">{t.admin.userRole}</option>
+                              <option value="admin">{t.admin.adminRole}</option>
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
+                          </div>
+                        )}
                         {user.role !== 'owner' && (
                           <>
-                            <div className="relative">
-                              <select
-                                value={user.role}
-                                onChange={(e) => roleMutation.mutate({ userId: user.id, role: e.target.value as 'user' | 'admin' })}
-                                disabled={roleMutation.isPending}
-                                className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
-                              >
-                                <option value="user">{t.admin.userRole}</option>
-                                <option value="admin">{t.admin.adminRole}</option>
-                              </select>
-                              <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
-                            </div>
                             {user.is_active ? (
                               <button
                                 onClick={() => setBanTarget(user)}
