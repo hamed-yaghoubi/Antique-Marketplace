@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, X, Image } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { adminApi } from '@/api/admin.api'
+import { useAuth } from '@/contexts/AuthContext'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -38,6 +39,7 @@ type ProductForm = z.infer<typeof productSchema>
 export function AdminProducts() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isOwner } = useAuth()
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, page_size: 10, sort_by: 'created_at', sort_order: 'desc' })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
@@ -114,8 +116,22 @@ export function AdminProducts() {
     onError: () => toast.error(t.admin.updateFailed),
   })
 
+  const deleteProduct = async (id: number) => {
+    if (isOwner) {
+      try {
+        const api = (await import('@/api/axios')).default
+        await api.delete(`/owner/products/${id}`)
+        return
+      } catch {
+        await adminApi.deleteProduct(id)
+      }
+    } else {
+      await adminApi.deleteProduct(id)
+    }
+  }
+
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.deleteProduct(id),
+    mutationFn: deleteProduct,
     onSuccess: () => {
       toast.success(t.admin.productDeleted)
       queryClient.invalidateQueries({ queryKey: ['admin-products'] })
