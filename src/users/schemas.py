@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, model_validator
 from datetime import datetime
+from src.users.role import UserRole
 
 class UserBase(BaseModel):
     username: str
@@ -17,6 +18,8 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    role: UserRole
+    is_active: bool
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
