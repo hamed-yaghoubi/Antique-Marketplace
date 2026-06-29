@@ -53,6 +53,13 @@ def get_current_user(db: DbSession, token: str = Depends(get_access_token)) -> U
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been banned",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
 
 
