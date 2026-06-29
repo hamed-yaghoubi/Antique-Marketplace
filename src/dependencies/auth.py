@@ -1,5 +1,5 @@
 from typing import Annotated
-from jwt import InvalidTokenError
+import jwt
 from src.core import security
 from src.core.exceptions import InvalidCredentialsError
 from src.dependencies.db import DbSession
@@ -20,20 +20,38 @@ def get_access_token(request: Request, token: str | None = Depends(oauth2_scheme
     if cookie_token:
         return cookie_token
 
-    raise InvalidCredentialsError()
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def get_current_user(db: DbSession, token: str = Depends(get_access_token)) -> User:
     try:
         payload = security.decode_access_token(token)
         user_id = int(payload["sub"])
-    except (InvalidTokenError, KeyError, ValueError):
-        raise InvalidCredentialsError()
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except (jwt.InvalidTokenError, KeyError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     user = repository.get_by_id(db, user_id)
 
     if user is None:
-        raise InvalidCredentialsError()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return user
 
@@ -51,3 +69,15 @@ def get_current_admin(current_user: CurrentUser) -> User:
 
 
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
+
+def get_current_owner(current_user: CurrentUser) -> User:
+    if current_user.role != UserRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner access required"
+        )
+    return current_user
+
+
+CurrentOwner = Annotated[User, Depends(get_current_owner)]
