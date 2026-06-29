@@ -25,4 +25,9 @@ export const adminApi = {
     const response = await api.patch<User>(`/admin/users/${userId}/unban`)
     return response.data
   },
+
+  promoteUser: async (userId: number): Promise<User> => {
+    const response = await api.post<User>(`/owner/promote/${userId}`)
+    return response.data
+  },
 }

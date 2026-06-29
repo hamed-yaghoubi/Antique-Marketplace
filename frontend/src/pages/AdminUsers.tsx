@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Shield, ShieldOff, ChevronDown } from 'lucide-react'
+import { Shield, ShieldOff, ChevronDown, UserCheck } from 'lucide-react'
 import { adminApi } from '@/api/admin.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
@@ -9,12 +9,15 @@ import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, formatJalali } from '@/utils/persian'
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import type { User } from '@/types/auth'
 
 export function AdminUsers() {
+  const { user: currentUser, isOwner } = useAuth()
   const queryClient = useQueryClient()
   const [banTarget, setBanTarget] = useState<User | null>(null)
   const [unbanTarget, setUnbanTarget] = useState<User | null>(null)
+  const [promoteTarget, setPromoteTarget] = useState<User | null>(null)
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -51,8 +54,31 @@ export function AdminUsers() {
     onError: () => toast.error(t.admin.unbanFailed),
   })
 
-  const handleRoleChange = (userId: number, newRole: 'user' | 'admin') => {
-    roleMutation.mutate({ userId, role: newRole })
+  const promoteMutation = useMutation({
+    mutationFn: (userId: number) => adminApi.promoteUser(userId),
+    onSuccess: () => {
+      toast.success(t.admin.userPromoted)
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      setPromoteTarget(null)
+    },
+    onError: () => toast.error(t.admin.promoteFailed),
+  })
+
+  const canTargetUser = (target: User) => {
+    if (isOwner) return true
+    if (currentUser?.id === target.id) return false
+    return target.role === 'user'
+  }
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'owner':
+        return <Badge variant="warning">{t.admin.ownerRole}</Badge>
+      case 'admin':
+        return <Badge variant="info">{t.admin.adminRole}</Badge>
+      default:
+        return <Badge variant="default">{t.admin.userRole}</Badge>
+    }
   }
 
   return (
@@ -84,9 +110,7 @@ export function AdminUsers() {
                     <span className="font-semibold text-antique-wood">{user.username}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={user.role === 'admin' ? 'info' : 'default'}>
-                      {user.role === 'admin' ? t.admin.adminRole : t.admin.userRole}
-                    </Badge>
+                    {getRoleBadge(user.role)}
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={user.is_active ? 'success' : 'danger'}>
@@ -97,37 +121,54 @@ export function AdminUsers() {
                     {formatJalali(user.created_at)}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
-                          disabled={roleMutation.isPending}
-                          className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
-                        >
-                          <option value="user">{t.admin.userRole}</option>
-                          <option value="admin">{t.admin.adminRole}</option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
+                    {canTargetUser(user) ? (
+                      <div className="flex items-center gap-2">
+                        {isOwner && user.role === 'user' && (
+                          <button
+                            onClick={() => setPromoteTarget(user)}
+                            className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-green-100 hover:text-green-600 transition-colors"
+                            title={t.admin.promote}
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </button>
+                        )}
+                        {user.role !== 'owner' && (
+                          <>
+                            <div className="relative">
+                              <select
+                                value={user.role}
+                                onChange={(e) => roleMutation.mutate({ userId: user.id, role: e.target.value as 'user' | 'admin' })}
+                                disabled={roleMutation.isPending}
+                                className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
+                              >
+                                <option value="user">{t.admin.userRole}</option>
+                                <option value="admin">{t.admin.adminRole}</option>
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
+                            </div>
+                            {user.is_active ? (
+                              <button
+                                onClick={() => setBanTarget(user)}
+                                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-red-100 hover:text-red-600 transition-colors"
+                                title={t.admin.ban}
+                              >
+                                <ShieldOff className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setUnbanTarget(user)}
+                                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-green-100 hover:text-green-600 transition-colors"
+                                title={t.admin.unban}
+                              >
+                                <Shield className="h-4 w-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
-                      {user.is_active ? (
-                        <button
-                          onClick={() => setBanTarget(user)}
-                          className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-red-100 hover:text-red-600 transition-colors"
-                          title={t.admin.ban}
-                        >
-                          <ShieldOff className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setUnbanTarget(user)}
-                          className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-green-100 hover:text-green-600 transition-colors"
-                          title={t.admin.unban}
-                        >
-                          <Shield className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-xs text-antique-sepia-light">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -159,6 +200,16 @@ export function AdminUsers() {
           <Button variant="secondary" onClick={() => setUnbanTarget(null)}>{t.admin.cancel}</Button>
           <Button variant="primary" isLoading={unbanMutation.isPending} onClick={() => unbanTarget && unbanMutation.mutate(unbanTarget.id)}>
             {t.admin.unban}
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={promoteTarget !== null} onClose={() => setPromoteTarget(null)} title={t.admin.promote} size="sm">
+        <p className="text-sm text-antique-sepia-light">{t.admin.confirmPromote}</p>
+        <div className="flex justify-start gap-3 mt-6">
+          <Button variant="secondary" onClick={() => setPromoteTarget(null)}>{t.admin.cancel}</Button>
+          <Button variant="primary" isLoading={promoteMutation.isPending} onClick={() => promoteTarget && promoteMutation.mutate(promoteTarget.id)}>
+            {t.admin.promote}
           </Button>
         </div>
       </Modal>

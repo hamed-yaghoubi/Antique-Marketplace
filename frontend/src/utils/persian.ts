@@ -163,6 +163,11 @@ export const t = {
     noUsers: 'هیچ کاربری یافت نشد',
     userRole: 'نقش کاربر',
     adminRole: 'مدیر',
+    ownerRole: 'مالک',
+    promote: 'ارتقا به مدیر',
+    userPromoted: 'کاربر با موفقیت ارتقا یافت',
+    promoteFailed: 'خطا در ارتقای کاربر',
+    confirmPromote: 'آیا از ارتقای این کاربر به مدیر اطمینان دارید؟',
   },
   validation: {
     required: 'این فیلد الزامی است',
