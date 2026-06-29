@@ -1,7 +1,7 @@
 export interface User {
   id: number
   username: string
-  role: 'user' | 'admin'
+  role: 'user' | 'admin' | 'owner'
   is_active: boolean
   created_at: string
 }
