@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingCart, Crown, Shield, ListOrdered, User, Store } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingCart, Crown, Shield, ListOrdered, User, Store, Users } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { t } from '@/utils/persian'
 
@@ -16,6 +16,7 @@ const authItems = [
 const adminItems = [
   { to: '/admin', icon: LayoutDashboard, label: t.nav.dashboard },
   { to: '/admin/products', icon: Shield, label: t.nav.manageProducts },
+  { to: '/admin/users', icon: Users, label: t.nav.manageUsers },
 ]
 
 export function Sidebar() {

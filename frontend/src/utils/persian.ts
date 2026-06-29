@@ -29,6 +29,7 @@ export const t = {
     orders: 'سفارشات',
     profile: 'پروفایل',
     myProducts: 'محصولات من',
+    manageUsers: 'مدیریت کاربران',
   },
   auth: {
     loginTitle: 'بازارچه عتیقه',
