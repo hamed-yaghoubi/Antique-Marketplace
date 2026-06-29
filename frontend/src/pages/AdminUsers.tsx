@@ -102,7 +102,8 @@ export function AdminUsers() {
                         <select
                           value={user.role}
                           onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin')}
-                          className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold"
+                          disabled={roleMutation.isPending}
+                          className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
                         >
                           <option value="user">{t.admin.userRole}</option>
                           <option value="admin">{t.admin.adminRole}</option>
