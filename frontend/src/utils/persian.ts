@@ -168,6 +168,12 @@ export const t = {
     userPromoted: 'کاربر با موفقیت ارتقا یافت',
     promoteFailed: 'خطا در ارتقای کاربر',
     confirmPromote: 'آیا از ارتقای این کاربر به مدیر اطمینان دارید؟',
+    demote: 'تنزل به کاربر عادی',
+    userDemoted: 'کاربر با موفقیت تنزل یافت',
+    demoteFailed: 'خطا در تنزل کاربر',
+    confirmDemote: 'آیا از تنزل این کاربر به کاربر عادی اطمینان دارید؟',
+    searchUsers: 'جستجوی کاربران...',
+    searchPlaceholder: 'جستجو بر اساس نام کاربری یا نقش',
   },
   validation: {
     required: 'این فیلد الزامی است',

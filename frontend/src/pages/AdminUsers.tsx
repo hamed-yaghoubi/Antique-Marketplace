@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Shield, ShieldOff, ChevronDown, UserCheck } from 'lucide-react'
+import { Shield, ShieldOff, UserCheck, UserMinus, Search } from 'lucide-react'
 import { adminApi } from '@/api/admin.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
@@ -8,16 +8,18 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, formatJalali } from '@/utils/persian'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import type { User } from '@/types/auth'
 
 export function AdminUsers() {
   const { user: currentUser, isOwner } = useAuth()
   const queryClient = useQueryClient()
+  const [search, setSearch] = useState('')
   const [banTarget, setBanTarget] = useState<User | null>(null)
   const [unbanTarget, setUnbanTarget] = useState<User | null>(null)
   const [promoteTarget, setPromoteTarget] = useState<User | null>(null)
+  const [demoteTarget, setDemoteTarget] = useState<User | null>(null)
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -64,16 +66,33 @@ export function AdminUsers() {
     onError: () => toast.error(t.admin.promoteFailed),
   })
 
+  const demoteMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: number; role: 'user' }) =>
+      adminApi.updateUserRole(userId, role),
+    onSuccess: () => {
+      toast.success(t.admin.userDemoted)
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      setDemoteTarget(null)
+    },
+    onError: () => toast.error(t.admin.demoteFailed),
+  })
+
   const canTargetUser = (target: User) => {
     if (isOwner) return true
     if (currentUser?.id === target.id) return false
     return target.role === 'user'
   }
 
-  const canChangeRole = (target: User) => {
-    if (isOwner) return target.role !== 'owner'
-    return target.role === 'user'
-  }
+  const filteredUsers = useMemo(() => {
+    if (!users) return []
+    if (!search.trim()) return users
+    const q = search.trim().toLowerCase()
+    return users.filter(
+      (user) =>
+        user.username.toLowerCase().includes(q) ||
+        user.role.toLowerCase().includes(q)
+    )
+  }, [users, search])
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -94,6 +113,19 @@ export function AdminUsers() {
         <p className="mt-1 text-sm text-antique-sepia-light">{t.admin.manageUsersSubtitle}</p>
       </div>
 
+      <div className="mb-4">
+        <div className="relative max-w-md">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
+          <input
+            type="text"
+            placeholder={t.admin.searchPlaceholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-field w-full pr-10"
+          />
+        </div>
+      </div>
+
       {isLoading ? (
         <TableSkeleton rows={5} cols={5} />
       ) : (
@@ -109,7 +141,7 @@ export function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-antique-gold/10">
-              {users?.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="transition-colors hover:bg-antique-gold/5">
                   <td className="px-6 py-4">
                     <span className="font-semibold text-antique-wood">{user.username}</span>
@@ -137,19 +169,14 @@ export function AdminUsers() {
                             <UserCheck className="h-4 w-4" />
                           </button>
                         )}
-                        {canChangeRole(user) && (
-                          <div className="relative">
-                            <select
-                              value={user.role}
-                              onChange={(e) => roleMutation.mutate({ userId: user.id, role: e.target.value as 'user' | 'admin' })}
-                              disabled={roleMutation.isPending}
-                              className="appearance-none rounded-lg border border-antique-gold/20 bg-white py-1.5 pl-8 pr-3 text-sm text-antique-wood focus:border-antique-gold focus:outline-none focus:ring-1 focus:ring-antique-gold disabled:opacity-50"
-                            >
-                              <option value="user">{t.admin.userRole}</option>
-                              <option value="admin">{t.admin.adminRole}</option>
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-antique-sepia" />
-                          </div>
+                        {isOwner && user.role === 'admin' && (
+                          <button
+                            onClick={() => setDemoteTarget(user)}
+                            className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-orange-100 hover:text-orange-600 transition-colors"
+                            title={t.admin.demote}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </button>
                         )}
                         {user.role !== 'owner' && (
                           <>
@@ -179,7 +206,7 @@ export function AdminUsers() {
                   </td>
                 </tr>
               ))}
-              {users?.length === 0 && (
+              {filteredUsers.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-sm text-antique-sepia-light">
                     {t.admin.noUsers}
@@ -217,6 +244,16 @@ export function AdminUsers() {
           <Button variant="secondary" onClick={() => setPromoteTarget(null)}>{t.admin.cancel}</Button>
           <Button variant="primary" isLoading={promoteMutation.isPending} onClick={() => promoteTarget && promoteMutation.mutate(promoteTarget.id)}>
             {t.admin.promote}
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={demoteTarget !== null} onClose={() => setDemoteTarget(null)} title={t.admin.demote} size="sm">
+        <p className="text-sm text-antique-sepia-light">{t.admin.confirmDemote}</p>
+        <div className="flex justify-start gap-3 mt-6">
+          <Button variant="secondary" onClick={() => setDemoteTarget(null)}>{t.admin.cancel}</Button>
+          <Button variant="danger" isLoading={demoteMutation.isPending} onClick={() => demoteTarget && demoteMutation.mutate({ userId: demoteTarget.id, role: 'user' })}>
+            {t.admin.demote}
           </Button>
         </div>
       </Modal>
