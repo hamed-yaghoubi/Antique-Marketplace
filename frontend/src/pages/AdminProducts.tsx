@@ -280,6 +280,7 @@ export function AdminProducts() {
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.priceLabel}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.admin.stock}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.statusLabel}</th>
+                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.products.seller}</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-antique-wood">{t.admin.actions}</th>
               </tr>
             </thead>
@@ -300,11 +301,13 @@ export function AdminProducts() {
                   </td>
                   <td className="px-6 py-4"><Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge></td>
                   <td className="px-6 py-4 text-sm font-bold text-antique-wood">{formatPrice(product.price)}</td>
+                  <td className="px-6 py-4 text-sm text-antique-wood">{toPersianNumbers(product.quantity)}</td>
                   <td className="px-6 py-4">
                     <Badge variant={product.is_active ? 'success' : 'warning'}>
                       {product.is_active ? t.products.active : t.products.inactive}
                     </Badge>
                   </td>
+                  <td className="px-6 py-4 text-sm text-antique-sepia-light">{product.seller ?? '-'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => openEditModal(product as ProductCard)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors">
@@ -319,7 +322,7 @@ export function AdminProducts() {
               ))}
               {data?.items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-antique-sepia-light">
+                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-antique-sepia-light">
                     {t.products.noProducts}
                   </td>
                 </tr>

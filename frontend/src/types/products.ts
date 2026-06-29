@@ -11,6 +11,9 @@ export interface ProductCard {
   price: number
   category: ProductCategory
   is_active: boolean
+  quantity: number
+  seller_id: number
+  seller: string | null
   main_image: ProductImage | null
 }
 

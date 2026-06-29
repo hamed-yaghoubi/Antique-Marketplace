@@ -15,8 +15,8 @@ export function formatJalaliDateTime(dateString: string): string {
 }
 
 export function formatPrice(amount: number): string {
-  const formatted = new Intl.NumberFormat('fa-IR').format(amount)
-  return `${toPersianNumbers(formatted)} ریال`
+  const formatted = new Intl.NumberFormat('en-US').format(amount)
+  return `$${formatted}`
 }
 
 export const t = {

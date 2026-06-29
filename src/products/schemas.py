@@ -47,6 +47,9 @@ class ProductCard(BaseModel):
     price: Decimal
     category: ProductCategory
     is_active: bool
+    quantity: int
+    seller_id: int
+    seller: str | None = None
     main_image: ProductImageResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -57,12 +60,17 @@ class ProductCard(BaseModel):
         if isinstance(data, dict):
             images = data.get("images", [])
             data["main_image"] = images[0] if images else None
+            seller_user = data.get("seller")
+            if seller_user is not None:
+                data["seller"] = getattr(seller_user, "username", None) or data.get("seller")
             return data
 
         images = getattr(data, "images", None) or []
+        seller_user = getattr(data, "seller", None)
         result = {}
-        for key in ["id", "title", "price", "category", "is_active"]:
+        for key in ["id", "title", "price", "category", "is_active", "quantity", "seller_id"]:
             result[key] = getattr(data, key)
+        result["seller"] = getattr(seller_user, "username", None) if seller_user else None
         result["main_image"] = images[0] if images else None
         return result
 
