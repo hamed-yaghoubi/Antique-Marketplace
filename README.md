@@ -8,6 +8,7 @@ A full-stack web application for buying and selling antiques with multi-seller s
 |-------|-------------|
 | **Backend** | Python 3.14, FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL |
 | **Frontend** | React 18, TypeScript, Vite 6, Tailwind CSS, React Router 6 |
+| **Testing** | pytest, httpx, SQLite (in-memory) |
 
 ## Features
 
@@ -80,6 +81,16 @@ Antique-Marketplace/
 │   ├── core/              # Config, security
 │   ├── db/                # Database engine/session
 │   └── dependencies/      # FastAPI dependencies
+├── tests/                 # Test suite (pytest)
+│   ├── conftest.py        # Shared fixtures and test infrastructure
+│   ├── test_schemas.py    # Schema validation tests
+│   ├── test_repositories.py  # Repository CRUD tests
+│   ├── test_services.py   # Service business logic tests
+│   ├── test_routes_auth.py   # Auth API endpoint tests
+│   ├── test_routes_products.py  # Product API endpoint tests
+│   ├── test_routes_cart.py  # Cart API endpoint tests
+│   ├── test_routes_orders.py  # Order API endpoint tests
+│   └── test_routes_admin.py  # Admin API endpoint tests
 ├── frontend/              # Frontend (React)
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
@@ -92,7 +103,28 @@ Antique-Marketplace/
 └── static/                # Uploaded files
 ```
 
+## Testing
+
+Install dev dependencies and run the test suite:
+
+```bash
+# Install dev dependencies
+uv sync --group dev
+
+# Run all tests
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run a specific module
+uv run pytest tests/test_services.py -v
+```
+
+Tests use an in-memory SQLite database and run in isolated transactions — no external database required.
+
 ## Documentation
 
 - [Backend Documentation](src/README.md)
 - [Frontend Documentation](frontend/README.md)
+- [TestDocumentation](tests/README.md)
