@@ -17,31 +17,6 @@ def get_user(db: Session, user_id: int) -> User:
     return user
 
 
-def update_user_role(db: Session, user_id: int, role: UserRole, current_user: User) -> User:
-    target = get_user(db, user_id)
-
-    if target.id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot change your own role"
-        )
-
-    if current_user.role == UserRole.ADMIN:
-        if target.role in (UserRole.ADMIN, UserRole.OWNER):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admins cannot change role of other admins or owners"
-            )
-        if role != UserRole.USER:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admins can only assign the user role"
-            )
-
-    target.role = role
-    return repository.update(db, target)
-
-
 def ban_user(db: Session, user_id: int, current_user: User) -> User:
     target = get_user(db, user_id)
 

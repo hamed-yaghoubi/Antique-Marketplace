@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from src.admin import service
-from src.admin.schemas import UserResponse, UserUpdateRole, UserBan
+from src.users.schemas import UserResponse
 from src.core.exceptions import ProductNotFoundError, UserNotFoundError
-from src.dependencies.auth import CurrentAdmin
+from src.dependencies.auth import CurrentAdmin, CurrentOwner
 from src.dependencies.db import DbSession
 from src.products import service as products_service
 from src.users.role import UserRole
@@ -20,14 +20,6 @@ def list_users(db: DbSession, current_admin: CurrentAdmin):
 def get_user(user_id: int, db: DbSession, current_admin: CurrentAdmin):
     try:
         return service.get_user(db, user_id)
-    except UserNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-
-
-@router.patch("/users/{user_id}/role", response_model=UserResponse)
-def update_user_role(user_id: int, data: UserUpdateRole, db: DbSession, current_admin: CurrentAdmin):
-    try:
-        return service.update_user_role(db, user_id, data.role, current_admin)
     except UserNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
