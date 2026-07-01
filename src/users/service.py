@@ -65,3 +65,15 @@ def unban_user(db: Session, user_id: int, current_user: User) -> User:
 
     target.is_active = True
     return repository.update(db, target)
+
+def promote_to_admin(db: Session, user_id: int, current_user: User) -> User:
+    target = get_user(db, user_id)
+
+    if target.role in (UserRole.ADMIN, UserRole.OWNER):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already an admin or owner"
+        )
+
+    target.role = UserRole.ADMIN
+    return repository.update(db, target)

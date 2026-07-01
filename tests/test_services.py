@@ -478,3 +478,23 @@ class TestAdminService:
         with pytest.raises(HTTPException) as exc_info:
             service.unban_user(db_session, other_admin.id, admin_user)
         assert exc_info.value.status_code == 403
+
+    def test_promote_to_admin(self, user_factory, owner_user, db_session):
+        target = user_factory(username="topromote")
+        promoted = service.promote_to_admin(db_session, target.id, owner_user)
+        assert promoted.role == UserRole.ADMIN
+
+    def test_promote_already_admin(self, user_factory, owner_user, db_session):
+        target = user_factory(username="alreadyadmin", role=UserRole.ADMIN)
+        with pytest.raises(HTTPException) as exc_info:
+            service.promote_to_admin(db_session, target.id, owner_user)
+        assert exc_info.value.status_code == 400
+
+    def test_promote_already_owner(self, user_factory, owner_user, db_session):
+        with pytest.raises(HTTPException) as exc_info:
+            service.promote_to_admin(db_session, owner_user.id, owner_user)
+        assert exc_info.value.status_code == 400
+
+    def test_promote_nonexistent_user(self, owner_user, db_session):
+        with pytest.raises(UserNotFoundError):
+            service.promote_to_admin(db_session, 99999, owner_user)

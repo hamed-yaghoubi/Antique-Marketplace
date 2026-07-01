@@ -46,6 +46,15 @@ npm run build
 npm run preview
 ```
 
+## Docker
+
+The frontend can also be run via Docker. See [docker/README.md](../docker/README.md) for setup instructions.
+
+```bash
+cd docker
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up frontend
+```
+
 ## Pages
 
 | Route | Page | Access |

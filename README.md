@@ -82,23 +82,17 @@ Antique-Marketplace/
 │   ├── db/                # Database engine/session
 │   └── dependencies/      # FastAPI dependencies
 ├── tests/                 # Test suite (pytest)
-│   ├── conftest.py        # Shared fixtures and test infrastructure
-│   ├── test_schemas.py    # Schema validation tests
-│   ├── test_repositories.py  # Repository CRUD tests
-│   ├── test_services.py   # Service business logic tests
-│   ├── test_routes_auth.py   # Auth API endpoint tests
-│   ├── test_routes_products.py  # Product API endpoint tests
-│   ├── test_routes_cart.py  # Cart API endpoint tests
-│   ├── test_routes_orders.py  # Order API endpoint tests
-│   └── test_routes_admin.py  # Admin API endpoint tests
 ├── frontend/              # Frontend (React)
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Route pages
-│   │   ├── utils/         # Utility functions
-│   │   ├── types/         # TypeScript types
-│   │   └── api/           # API client
-│   └── ...
+│   └── src/
+│       ├── components/    # Reusable UI components
+│       ├── pages/         # Route pages
+│       ├── utils/         # Utility functions
+│       ├── types/         # TypeScript types
+│       └── api/           # API client
+├── docker/                # Docker configuration
+│   ├── backend/           # Backend Dockerfile
+│   ├── frontend/          # Frontend Dockerfile
+│   └── nginx/             # Nginx config
 ├── migrations/            # Alembic migrations
 └── static/                # Uploaded files
 ```
@@ -122,6 +116,17 @@ uv run pytest tests/test_services.py -v
 ```
 
 Tests use an in-memory SQLite database and run in isolated transactions — no external database required.
+
+## Docker
+
+Complete Docker setup with development and production environments. See [docker/README.md](docker/README.md) for full documentation.
+
+**Quick start:**
+```bash
+cd docker
+cp .env.docker .env
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
 
 ## Documentation
 

@@ -1,0 +1,79 @@
+# =============================================================================
+# Docker Compose - Development Overrides
+# =============================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Features: Hot-reload, volume mounts, debug ports
+# Run from: docker/ directory
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL (same as production)
+  # ---------------------------------------------------------------------------
+  postgres:
+    ports:
+      - "5432:5432"
+
+  # ---------------------------------------------------------------------------
+  # Backend (Development)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+      target: development
+    container_name: antique-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src
+      - ../alembic.ini:/app/alembic.ini
+      - ../migrations:/app/migrations
+      - uploads_data:/app/static/products
+    environment:
+      - COOKIE_SECURE=false
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Development)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend/Dockerfile
+      target: development
+    container_name: antique-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend/src:/app/src
+      - ../frontend/public:/app/public
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - antique-network
+
+  # ---------------------------------------------------------------------------
+  # Remove Nginx in development
+  # ---------------------------------------------------------------------------
+  nginx:
+    profiles:
+      - production
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  antique-network:
+    driver: bridge
