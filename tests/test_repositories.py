@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from src.core import security
 from src.users.models import User
 from src.users.role import UserRole
-from src.users import repository as users_repo
+from src.users import repository
 from src.products.models import Product, ProductImage
 from src.products.category import ProductCategory
 from src.products import repository as products_repo
@@ -18,7 +18,7 @@ from src.cart import repository as cart_repo
 from src.orders.models import Order, OrderItem
 from src.orders.orderstatus import OrderStatus
 from src.orders import repository as orders_repo
-from src.admin import repository as admin_repo
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -29,22 +29,22 @@ from src.admin import repository as admin_repo
 class TestUsersRepository:
     def test_get_by_id(self, user_factory, db_session):
         user = user_factory(username="findme")
-        found = users_repo.get_by_id(db_session, user.id)
+        found = repository.get_by_id(db_session, user.id)
         assert found is not None
         assert found.username == "findme"
 
     def test_get_by_id_not_found(self, db_session):
-        found = users_repo.get_by_id(db_session, 99999)
+        found = repository.get_by_id(db_session, 99999)
         assert found is None
 
     def test_get_by_username(self, user_factory, db_session):
         user = user_factory(username="byusername")
-        found = users_repo.get_by_username(db_session, "byusername")
+        found = repository.get_by_username(db_session, "byusername")
         assert found is not None
         assert found.id == user.id
 
     def test_get_by_username_not_found(self, db_session):
-        found = users_repo.get_by_username(db_session, "nobody")
+        found = repository.get_by_username(db_session, "nobody")
         assert found is None
 
     def test_create_user(self, db_session):
@@ -53,7 +53,7 @@ class TestUsersRepository:
             hashed_password=security.hash_password("pass"),
             role=UserRole.USER,
         )
-        created = users_repo.create(db_session, user)
+        created = repository.create(db_session, user)
         assert created.id is not None
         assert created.username == "newuser"
 
@@ -65,13 +65,13 @@ class TestUsersRepository:
     def test_update_user(self, user_factory, db_session):
         user = user_factory(username="before")
         user.username = "after"
-        updated = users_repo.update(db_session, user)
+        updated = repository.update(db_session, user)
         assert updated.username == "after"
 
     def test_delete_user(self, user_factory, db_session):
         user = user_factory(username="deleteme")
-        users_repo.delete(db_session, user)
-        assert users_repo.get_by_id(db_session, user.id) is None
+        repository.delete(db_session, user)
+        assert repository.get_by_id(db_session, user.id) is None
 
 
 # ──────────────────────────────────────────────────────────────
@@ -354,19 +354,19 @@ class TestAdminRepository:
     def test_get_all_users(self, user_factory, db_session):
         user_factory(username="u1")
         user_factory(username="u2")
-        users = admin_repo.get_all_users(db_session)
+        users = repository.get_all_users(db_session)
         assert len(users) >= 2
 
     def test_get_by_id(self, user_factory, db_session):
         user = user_factory(username="adminfind")
-        found = admin_repo.get_by_id(db_session, user.id)
+        found = repository.get_by_id(db_session, user.id)
         assert found is not None
 
     def test_get_by_id_not_found(self, db_session):
-        assert admin_repo.get_by_id(db_session, 99999) is None
+        assert repository.get_by_id(db_session, 99999) is None
 
     def test_update(self, user_factory, db_session):
         user = user_factory(username="before")
         user.username = "after"
-        updated = admin_repo.update(db_session, user)
+        updated = repository.update(db_session, user)
         assert updated.username == "after"

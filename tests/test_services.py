@@ -20,7 +20,7 @@ from src.core.exceptions import (
 )
 from src.users.models import User
 from src.users.role import UserRole
-from src.users import service as users_service
+from src.users import service
 from src.users.schemas import UserUpdate
 from src.products.models import Product
 from src.products.category import ProductCategory
@@ -33,7 +33,7 @@ from src.orders.orderstatus import OrderStatus
 from src.orders.schemas import OrderStatusUpdate
 from src.auth import service as auth_service
 from src.auth.schemas import ChangePasswordRequest, LoginRequest
-from src.admin import service as admin_service
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -44,39 +44,39 @@ from src.admin import service as admin_service
 class TestUserService:
     def test_get_user(self, user_factory, db_session):
         user = user_factory(username="getme")
-        found = users_service.get_user(db_session, user.id)
+        found = service.get_user(db_session, user.id)
         assert found.username == "getme"
 
     def test_get_user_not_found(self, db_session):
         with pytest.raises(UserNotFoundError):
-            users_service.get_user(db_session, 99999)
+            service.get_user(db_session, 99999)
 
     def test_get_user_by_username(self, user_factory, db_session):
         user = user_factory(username="byuser")
-        found = users_service.get_user_by_username(db_session, "byuser")
+        found = service.get_user_by_username(db_session, "byuser")
         assert found.id == user.id
 
     def test_get_user_by_username_not_found(self, db_session):
         with pytest.raises(UserNotFoundError):
-            users_service.get_user_by_username(db_session, "nobody")
+            service.get_user_by_username(db_session, "nobody")
 
     def test_update_user(self, user_factory, db_session):
         user = user_factory(username="oldname")
         update = UserUpdate(username="newname")
-        updated = users_service.update_user(db_session, user, update)
+        updated = service.update_user(db_session, user, update)
         assert updated.username == "newname"
 
     def test_update_user_no_changes(self, user_factory, db_session):
         user = user_factory(username="nochange")
         update = UserUpdate()
-        updated = users_service.update_user(db_session, user, update)
+        updated = service.update_user(db_session, user, update)
         assert updated.username == "nochange"
 
     def test_delete_user(self, user_factory, db_session):
         user = user_factory(username="deleteme")
-        users_service.delete_user(db_session, user)
+        service.delete_user(db_session, user)
         with pytest.raises(UserNotFoundError):
-            users_service.get_user(db_session, user.id)
+            service.get_user(db_session, user.id)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -435,46 +435,46 @@ class TestAdminService:
     def test_get_all_users(self, user_factory, db_session):
         user_factory(username="a1")
         user_factory(username="a2")
-        users = admin_service.get_all_users(db_session)
+        users = service.get_all_users(db_session)
         assert len(users) >= 2
 
     def test_get_user(self, user_factory, db_session):
         user = user_factory(username="adminfind")
-        found = admin_service.get_user(db_session, user.id)
+        found = service.get_user(db_session, user.id)
         assert found.username == "adminfind"
 
     def test_get_user_not_found(self, db_session):
         with pytest.raises(UserNotFoundError):
-            admin_service.get_user(db_session, 99999)
+            service.get_user(db_session, 99999)
 
     def test_ban_user(self, user_factory, admin_user, db_session):
         target = user_factory(username="toban")
-        banned = admin_service.ban_user(db_session, target.id, admin_user)
+        banned = service.ban_user(db_session, target.id, admin_user)
         assert banned.is_active is False
 
     def test_ban_self(self, admin_user, db_session):
         with pytest.raises(HTTPException) as exc_info:
-            admin_service.ban_user(db_session, admin_user.id, admin_user)
+            service.ban_user(db_session, admin_user.id, admin_user)
         assert exc_info.value.status_code == 400
 
     def test_ban_admin_by_admin(self, admin_user, user_factory, db_session):
         other_admin = user_factory(username="otheradmin", role=UserRole.ADMIN)
         with pytest.raises(HTTPException) as exc_info:
-            admin_service.ban_user(db_session, other_admin.id, admin_user)
+            service.ban_user(db_session, other_admin.id, admin_user)
         assert exc_info.value.status_code == 403
 
     def test_ban_owner_by_admin(self, admin_user, owner_user, db_session):
         with pytest.raises(HTTPException) as exc_info:
-            admin_service.ban_user(db_session, owner_user.id, admin_user)
+            service.ban_user(db_session, owner_user.id, admin_user)
         assert exc_info.value.status_code == 403
 
     def test_unban_user(self, user_factory, admin_user, db_session):
         target = user_factory(username="tounban", is_active=False)
-        unbanned = admin_service.unban_user(db_session, target.id, admin_user)
+        unbanned = service.unban_user(db_session, target.id, admin_user)
         assert unbanned.is_active is True
 
     def test_unban_admin_by_admin(self, admin_user, user_factory, db_session):
         other_admin = user_factory(username="bannedadmin", role=UserRole.ADMIN, is_active=False)
         with pytest.raises(HTTPException) as exc_info:
-            admin_service.unban_user(db_session, other_admin.id, admin_user)
+            service.unban_user(db_session, other_admin.id, admin_user)
         assert exc_info.value.status_code == 403

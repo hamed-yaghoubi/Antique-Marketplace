@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
-from src.admin import service
+from src.users import service
 from src.users.schemas import UserResponse
 from src.core.exceptions import ProductNotFoundError, UserNotFoundError
-from src.dependencies.auth import CurrentAdmin, CurrentOwner
+from src.dependencies.auth import CurrentAdmin
 from src.dependencies.db import DbSession
 from src.products import service as products_service
 from src.users.role import UserRole

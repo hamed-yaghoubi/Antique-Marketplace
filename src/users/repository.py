@@ -27,3 +27,7 @@ def update(db: Session, user: User) -> User:
 def delete(db: Session, user: User) -> None:
     db.delete(user)
     db.commit()
+
+def get_all_users(db: Session) -> list[User]:
+    query = select(User)
+    return list(db.execute(query).scalars().all())

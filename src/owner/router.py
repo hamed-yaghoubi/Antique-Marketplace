@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from src.admin import service
+from src.users import service
 from src.users.schemas import UserResponse
 from src.core.exceptions import UserNotFoundError
 from src.dependencies.auth import CurrentOwner
