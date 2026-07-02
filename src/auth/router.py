@@ -2,7 +2,7 @@ from fastapi import APIRouter, Response, status, Depends, Request
 from src.auth.schemas import LoginRequest, TokenResponse, ChangePasswordRequest
 from src.auth import service
 from src.auth.cookies import get_refresh_token_from_cookie, set_refresh_cookie, delete_refresh_cookie
-from src.core.exceptions import AuthenticationError
+from src.core.exceptions import AppException, AuthenticationError
 from src.dependencies.auth import CurrentUser
 from src.dependencies.db import DbSession
 from src.users.schemas import UserCreate, UserResponse
@@ -35,7 +35,7 @@ def refresh_token(
         tokens = service.refresh_tokens(db, refresh_token_value)
         set_refresh_cookie(response, tokens.refresh_token)
         return tokens
-    except AuthenticationError:
+    except AppException:
         delete_refresh_cookie(response)
         raise
 
