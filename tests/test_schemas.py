@@ -127,18 +127,18 @@ class TestTokenPayload:
 class TestChangePasswordRequest:
     def test_valid_change(self):
         data = ChangePasswordRequest(
-            current_password="old",
-            new_password="new",
-            confirm_password="new",
+            current_password="OldPass1!",
+            new_password="NewPass1!",
+            confirm_password="NewPass1!",
         )
-        assert data.current_password == "old"
+        assert data.current_password == "OldPass1!"
 
     def test_passwords_must_match(self):
         with pytest.raises(ValidationError, match="Passwords do not match"):
             ChangePasswordRequest(
                 current_password="old",
-                new_password="new",
-                confirm_password="different",
+                new_password="NewPass1!",
+                confirm_password="Different1!",
             )
 
     def test_missing_fields(self):
@@ -182,17 +182,16 @@ class TestProductCreate:
                 category="invalid_category",
             )
 
-    def test_negative_quantity_not_rejected_at_schema_level(self):
-        """Note: The schema does not enforce ge=0 on quantity. Negative values
-        pass schema validation but should be caught at the service/DB level."""
-        product = ProductCreate(
-            title="Item",
-            description="desc",
-            price=Decimal("10.00"),
-            quantity=-1,
-            category=ProductCategory.BOOK,
-        )
-        assert product.quantity == -1
+    def test_negative_quantity_rejected_at_schema_level(self):
+        """Negative quantities are rejected at schema level via ge=0 constraint."""
+        with pytest.raises(ValidationError):
+            ProductCreate(
+                title="Item",
+                description="desc",
+                price=Decimal("10.00"),
+                quantity=-1,
+                category=ProductCategory.BOOK,
+            )
 
     def test_zero_quantity_allowed(self):
         product = ProductCreate(
@@ -354,9 +353,9 @@ class TestOrderCard:
     def test_from_attributes(self):
         data = {
             "id": 1,
-            "status": "paid",
+            "status": "confirmed",
             "total_price": Decimal("50.00"),
             "created_at": datetime.now(),
         }
         card = OrderCard.model_validate(data)
-        assert card.status == OrderStatus.PAID
+        assert card.status == OrderStatus.CONFIRMED

@@ -78,11 +78,11 @@ export function SellerDashboard() {
   ]
 
   const orderStatCards = [
-    { label: t.orders.pending, value: orderStats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: t.orders.preparing, value: orderStats?.preparing ?? 0, icon: Package, color: 'text-blue-600 bg-blue-50' },
-    { label: t.orders.shipped, value: orderStats?.shipped ?? 0, icon: Truck, color: 'text-purple-600 bg-purple-50' },
-    { label: t.orders.delivered, value: orderStats?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-    { label: t.orders.cancelled, value: orderStats?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
+    { label: t.orders.pending, value: orderStats?.orders_by_status?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+    { label: t.orders.preparing, value: orderStats?.orders_by_status?.preparing ?? 0, icon: Package, color: 'text-blue-600 bg-blue-50' },
+    { label: t.orders.shipped, value: orderStats?.orders_by_status?.shipped ?? 0, icon: Truck, color: 'text-purple-600 bg-purple-50' },
+    { label: t.orders.delivered, value: orderStats?.orders_by_status?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
+    { label: t.orders.cancelled, value: orderStats?.orders_by_status?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
   ]
 
   return (

@@ -1,6 +1,5 @@
 import api from './axios'
 import type {
-  OrderCard,
   OrderResponse,
   OrderFilters,
   PaginatedOrderResponse,

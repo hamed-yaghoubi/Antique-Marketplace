@@ -7,6 +7,7 @@ from fastapi import HTTPException
 
 from src.core import security
 from src.core.exceptions import (
+    AppException,
     CartItemNotFoundError,
     EmptyCartError,
     ForbiddenError,
@@ -15,6 +16,8 @@ from src.core.exceptions import (
     OrderCannotBeCancelledError,
     OrderNotFoundError,
     ProductNotFoundError,
+    SelfDemoteError,
+    SelfPurchaseError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
@@ -127,7 +130,7 @@ class TestAuthService:
     def test_login_banned_user(self, user_factory, db_session):
         user_factory(username="banned", is_active=False)
         data = LoginRequest(username="banned", password="TestPass123!")
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             auth_service.login(db_session, data)
         assert exc_info.value.status_code == 403
 
@@ -144,7 +147,7 @@ class TestAuthService:
         assert "sub" in payload
 
     def test_refresh_tokens_invalid(self, db_session):
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             auth_service.refresh_tokens(db_session, "invalid.token.here")
         assert exc_info.value.status_code == 401
 
@@ -156,7 +159,7 @@ class TestAuthService:
         from src.users import repository
         user = repository.get_by_username(db_session, "temp")
         repository.delete(db_session, user)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             auth_service.refresh_tokens(db_session, tokens.refresh_token)
         assert exc_info.value.status_code == 401
 
@@ -176,8 +179,8 @@ class TestAuthService:
         user = user_factory(username="wrongold")
         data = ChangePasswordRequest(
             current_password="WrongOld!",
-            new_password="NewPass!",
-            confirm_password="NewPass!",
+            new_password="NewPass1!",
+            confirm_password="NewPass1!",
         )
         with pytest.raises(InvalidCredentialsError):
             auth_service.change_password(db_session, user, data)
@@ -283,6 +286,12 @@ class TestCartService:
         with pytest.raises(ProductNotFoundError):
             cart_service.add_item(db_session, data, regular_user)
 
+    def test_add_item_self_purchase(self, owner_user, product_factory, db_session):
+        product = product_factory(title="Own", seller_id=owner_user.id)
+        data = CartItemCreate(product_id=product.id, quantity=1)
+        with pytest.raises(SelfPurchaseError):
+            cart_service.add_item(db_session, data, owner_user)
+
     def test_update_item_quantity(self, cart_item_factory, regular_user, sample_product, db_session):
         item = cart_item_factory(user_id=regular_user.id, product_id=sample_product.id, quantity=1)
         data = CartItemUpdate(quantity=5)
@@ -368,6 +377,12 @@ class TestOrderService:
         items = repository.get_by_user_id(db_session, regular_user.id)
         assert items == []
 
+    def test_create_order_self_purchase(self, owner_user, product_factory, cart_item_factory, db_session):
+        product = product_factory(title="Own", seller_id=owner_user.id, quantity=5)
+        cart_item_factory(user_id=owner_user.id, product_id=product.id, quantity=1)
+        with pytest.raises(SelfPurchaseError):
+            orders_service.create_order(db_session, owner_user)
+
     def test_get_orders(self, order_factory, regular_user, db_session):
         order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))
         order_factory(buyer_id=regular_user.id, total_price=Decimal("100"))
@@ -403,27 +418,27 @@ class TestOrderService:
         )
         original_quantity = product.quantity
         data = OrderStatusUpdate(status=OrderStatus.CANCELLED)
-        cancelled = orders_service.cancel_order(db_session, order.id, data, regular_user)
+        cancelled = orders_service.update_order_status(db_session, order.id, data, regular_user)
         assert cancelled.status == OrderStatus.CANCELLED
         db_session.refresh(product)
         assert product.quantity == original_quantity + 2
 
     def test_cancel_order_not_pending(self, order_factory, regular_user, db_session):
-        order = order_factory(buyer_id=regular_user.id, status=OrderStatus.PAID, total_price=Decimal("50"))
+        order = order_factory(buyer_id=regular_user.id, status=OrderStatus.CONFIRMED, total_price=Decimal("50"))
         data = OrderStatusUpdate(status=OrderStatus.CANCELLED)
         with pytest.raises(OrderCannotBeCancelledError):
-            orders_service.cancel_order(db_session, order.id, data, regular_user)
+            orders_service.update_order_status(db_session, order.id, data, regular_user)
 
     def test_cancel_order_not_found(self, regular_user, db_session):
         data = OrderStatusUpdate(status=OrderStatus.CANCELLED)
         with pytest.raises(OrderNotFoundError):
-            orders_service.cancel_order(db_session, 99999, data, regular_user)
+            orders_service.update_order_status(db_session, 99999, data, regular_user)
 
     def test_cancel_order_not_owner(self, order_factory, regular_user, other_user, db_session):
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))
         data = OrderStatusUpdate(status=OrderStatus.CANCELLED)
         with pytest.raises(ForbiddenError):
-            orders_service.cancel_order(db_session, order.id, data, other_user)
+            orders_service.update_order_status(db_session, order.id, data, other_user)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -453,18 +468,18 @@ class TestAdminService:
         assert banned.is_active is False
 
     def test_ban_self(self, admin_user, db_session):
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.ban_user(db_session, admin_user.id, admin_user)
         assert exc_info.value.status_code == 400
 
     def test_ban_admin_by_admin(self, admin_user, user_factory, db_session):
         other_admin = user_factory(username="otheradmin", role=UserRole.ADMIN)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.ban_user(db_session, other_admin.id, admin_user)
         assert exc_info.value.status_code == 403
 
     def test_ban_owner_by_admin(self, admin_user, owner_user, db_session):
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.ban_user(db_session, owner_user.id, admin_user)
         assert exc_info.value.status_code == 403
 
@@ -475,7 +490,7 @@ class TestAdminService:
 
     def test_unban_admin_by_admin(self, admin_user, user_factory, db_session):
         other_admin = user_factory(username="bannedadmin", role=UserRole.ADMIN, is_active=False)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.unban_user(db_session, other_admin.id, admin_user)
         assert exc_info.value.status_code == 403
 
@@ -486,15 +501,33 @@ class TestAdminService:
 
     def test_promote_already_admin(self, user_factory, owner_user, db_session):
         target = user_factory(username="alreadyadmin", role=UserRole.ADMIN)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.promote_to_admin(db_session, target.id, owner_user)
         assert exc_info.value.status_code == 400
 
     def test_promote_already_owner(self, user_factory, owner_user, db_session):
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AppException) as exc_info:
             service.promote_to_admin(db_session, owner_user.id, owner_user)
         assert exc_info.value.status_code == 400
 
     def test_promote_nonexistent_user(self, owner_user, db_session):
         with pytest.raises(UserNotFoundError):
             service.promote_to_admin(db_session, 99999, owner_user)
+
+    def test_demote_admin(self, user_factory, owner_user, db_session):
+        admin = user_factory(username="todemote", role=UserRole.ADMIN)
+        demoted = service.demote_to_user(db_session, admin.id, owner_user)
+        assert demoted.role == UserRole.USER
+
+    def test_demote_self(self, owner_user, db_session):
+        with pytest.raises(SelfDemoteError):
+            service.demote_to_user(db_session, owner_user.id, owner_user)
+
+    def test_demote_non_admin(self, user_factory, owner_user, db_session):
+        user = user_factory(username="regular")
+        with pytest.raises(ForbiddenError):
+            service.demote_to_user(db_session, user.id, owner_user)
+
+    def test_demote_nonexistent_user(self, owner_user, db_session):
+        with pytest.raises(UserNotFoundError):
+            service.demote_to_user(db_session, 99999, owner_user)

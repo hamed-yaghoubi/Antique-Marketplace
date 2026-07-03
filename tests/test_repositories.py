@@ -340,9 +340,9 @@ class TestOrdersRepository:
 
     def test_update_order(self, order_factory, regular_user, db_session):
         order = order_factory(buyer_id=regular_user.id)
-        order.status = OrderStatus.PAID
+        order.status = OrderStatus.CONFIRMED
         updated = orders_repo.update(db_session, order)
-        assert updated.status == OrderStatus.PAID
+        assert updated.status == OrderStatus.CONFIRMED
 
 
 # ──────────────────────────────────────────────────────────────
