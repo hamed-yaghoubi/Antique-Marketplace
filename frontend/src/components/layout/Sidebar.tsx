@@ -8,6 +8,7 @@ const publicItems = [
 ]
 
 const authItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: t.nav.dashboard },
   { to: '/cart', icon: ShoppingCart, label: t.nav.cart },
   { to: '/orders', icon: ListOrdered, label: t.nav.orders },
   { to: '/my-products', icon: Store, label: t.nav.myProducts },

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Users, Package, TrendingUp, ShoppingCart, Clock, CheckCircle, XCircle, ExternalLink } from 'lucide-react'
+import { ShoppingCart, Clock, CheckCircle, XCircle, Package, ListOrdered, ExternalLink } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Badge } from '@/components/ui/Badge'
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
 import type { OrderStatus } from '@/types/orders'
 
@@ -17,26 +18,28 @@ const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'succ
   cancelled: { label: t.orders.cancelled, variant: 'danger' },
 }
 
-export function AdminDashboard() {
-  const { data: dashStats, isLoading: dashLoading } = useQuery({
-    queryKey: ['admin-dashboard-stats'],
-    queryFn: () => ordersApi.getDashboardStats(),
-  })
+export function CustomerDashboard() {
+  const { user } = useAuth()
 
-  const { data: recentOrdersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-recent-orders'],
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ['customer-orders'],
     queryFn: () => ordersApi.getOrders({ page: 1, page_size: 5 }),
   })
 
-  const isLoading = dashLoading || ordersLoading
+  const { data: allOrdersData, isLoading: statsLoading } = useQuery({
+    queryKey: ['customer-order-stats'],
+    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 100 }),
+  })
+
+  const isLoading = ordersLoading || statsLoading
 
   if (isLoading) {
     return (
       <div>
         <Breadcrumbs />
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.dashboard.admin.title}</h1>
-          <p className="mt-1 text-sm text-antique-sepia-light">{t.dashboard.admin.subtitle}</p>
+          <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.dashboard.customer.title}</h1>
+          <p className="mt-1 text-sm text-antique-sepia-light">{t.dashboard.customer.subtitle}</p>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -47,53 +50,33 @@ export function AdminDashboard() {
     )
   }
 
-  const orderStats = dashStats?.order_stats
-  const outOfStock = (dashStats?.total_products ?? 0) - (dashStats?.active_products ?? 0)
-
-  const statCards = [
-    {
-      label: t.dashboard.admin.totalUsers,
-      value: toPersianNumbers(dashStats?.total_users ?? 0),
-      icon: Users,
-      color: 'text-blue-700 bg-blue-100',
-    },
-    {
-      label: t.dashboard.admin.totalProducts,
-      value: toPersianNumbers(dashStats?.total_products ?? 0),
-      icon: Package,
-      color: 'text-antique-gold bg-antique-gold/10',
-    },
-    {
-      label: t.dashboard.admin.outOfStockProducts,
-      value: toPersianNumbers(outOfStock),
-      icon: ShoppingCart,
-      color: 'text-red-700 bg-red-100',
-    },
-    {
-      label: t.dashboard.admin.totalRevenue,
-      value: formatPrice(Number(dashStats?.total_revenue ?? 0)),
-      icon: TrendingUp,
-      color: 'text-green-700 bg-green-100',
-    },
-  ]
+  const allOrders = allOrdersData?.items ?? []
+  const orderStats = {
+    total: allOrdersData?.total ?? 0,
+    pending: allOrders.filter((o) => o.status === 'pending').length,
+    delivered: allOrders.filter((o) => o.status === 'delivered').length,
+    cancelled: allOrders.filter((o) => o.status === 'cancelled').length,
+  }
 
   const orderStatCards = [
-    { label: t.orders.pending, value: orderStats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: t.orders.confirmed, value: orderStats?.confirmed ?? 0, icon: Package, color: 'text-blue-600 bg-blue-50' },
-    { label: t.orders.delivered, value: orderStats?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-    { label: t.orders.cancelled, value: orderStats?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
+    { label: t.dashboard.customer.totalOrders, value: orderStats.total, icon: Package, color: 'text-antique-gold bg-antique-gold/10' },
+    { label: t.dashboard.customer.pendingOrders, value: orderStats.pending, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+    { label: t.dashboard.customer.deliveredOrders, value: orderStats.delivered, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
+    { label: t.dashboard.customer.cancelledOrders, value: orderStats.cancelled, icon: XCircle, color: 'text-red-600 bg-red-50' },
   ]
 
   return (
     <div>
       <Breadcrumbs />
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">{t.dashboard.admin.title}</h1>
-        <p className="mt-1 text-sm text-antique-sepia-light">{t.dashboard.admin.subtitle}</p>
+        <h1 className="text-2xl font-bold text-antique-wood text-shadow-vintage">
+          {t.dashboard.welcome}، {user?.username}
+        </h1>
+        <p className="mt-1 text-sm text-antique-sepia-light">{t.dashboard.customer.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
+        {orderStatCards.map((stat) => (
           <div key={stat.label} className="card">
             <div className="flex items-center gap-4">
               <div className={`rounded-xl p-3 ${stat.color}`}>
@@ -101,45 +84,30 @@ export function AdminDashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-antique-sepia-light">{stat.label}</p>
-                <p className="text-xl font-bold text-antique-wood">{stat.value}</p>
+                <p className="text-xl font-bold text-antique-wood">{toPersianNumbers(stat.value)}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-6">
-        <h2 className="mb-4 text-lg font-bold text-antique-wood">{t.dashboard.admin.ordersByStatus}</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {orderStatCards.map((stat) => (
-            <div key={stat.label} className="card">
-              <div className="flex items-center gap-3">
-                <div className={`rounded-lg p-2 ${stat.color}`}>
-                  <stat.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm text-antique-sepia-light">{stat.label}</p>
-                  <p className="text-lg font-bold text-antique-wood">{toPersianNumbers(stat.value)}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
           <h2 className="mb-4 text-lg font-bold text-antique-wood">{t.dashboard.recentOrders}</h2>
-          {!recentOrdersData || recentOrdersData.items.length === 0 ? (
+          {!ordersData || ordersData.items.length === 0 ? (
             <div className="card py-8 text-center">
-              <p className="text-antique-sepia-light">{t.dashboard.noOrders}</p>
+              <ListOrdered className="mx-auto h-12 w-12 text-antique-gold/30" />
+              <p className="mt-3 text-antique-sepia-light">{t.dashboard.noOrders}</p>
+              <Link to="/" className="mt-3 inline-block text-sm font-medium text-antique-gold hover:underline">
+                {t.dashboard.customer.browseProducts}
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
-              {recentOrdersData.items.map((order) => {
+              {ordersData.items.map((order) => {
                 const status = statusMap[order.status] || { label: order.status, variant: 'default' as const }
                 return (
-                  <Link key={order.id} to={`/admin/orders`}>
+                  <Link key={order.id} to={`/orders/${order.id}`}>
                     <div className="card flex items-center justify-between transition-all hover:shadow-vintage-lg">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-antique-gold">#{toPersianNumbers(order.id)}</span>
@@ -163,35 +131,35 @@ export function AdminDashboard() {
         <div>
           <h2 className="mb-4 text-lg font-bold text-antique-wood">{t.dashboard.quickActions}</h2>
           <div className="space-y-3">
-            <Link to="/admin/users">
-              <div className="card flex items-center justify-between transition-all hover:shadow-vintage-lg">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-100 p-2">
-                    <Users className="h-5 w-5 text-blue-700" />
-                  </div>
-                  <span className="font-medium text-antique-wood">{t.dashboard.admin.manageUsers}</span>
-                </div>
-                <ExternalLink className="h-4 w-4 text-antique-sepia-light" />
-              </div>
-            </Link>
-            <Link to="/admin/products">
+            <Link to="/">
               <div className="card flex items-center justify-between transition-all hover:shadow-vintage-lg">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-antique-gold/10 p-2">
                     <Package className="h-5 w-5 text-antique-gold" />
                   </div>
-                  <span className="font-medium text-antique-wood">{t.dashboard.admin.manageProducts}</span>
+                  <span className="font-medium text-antique-wood">{t.dashboard.customer.browseProducts}</span>
                 </div>
                 <ExternalLink className="h-4 w-4 text-antique-sepia-light" />
               </div>
             </Link>
-            <Link to="/admin/orders">
+            <Link to="/orders">
+              <div className="card flex items-center justify-between transition-all hover:shadow-vintage-lg">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-blue-100 p-2">
+                    <ListOrdered className="h-5 w-5 text-blue-700" />
+                  </div>
+                  <span className="font-medium text-antique-wood">{t.dashboard.customer.myOrders}</span>
+                </div>
+                <ExternalLink className="h-4 w-4 text-antique-sepia-light" />
+              </div>
+            </Link>
+            <Link to="/cart">
               <div className="card flex items-center justify-between transition-all hover:shadow-vintage-lg">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-green-100 p-2">
                     <ShoppingCart className="h-5 w-5 text-green-700" />
                   </div>
-                  <span className="font-medium text-antique-wood">{t.dashboard.admin.manageOrders}</span>
+                  <span className="font-medium text-antique-wood">{t.dashboard.customer.shoppingCart}</span>
                 </div>
                 <ExternalLink className="h-4 w-4 text-antique-sepia-light" />
               </div>

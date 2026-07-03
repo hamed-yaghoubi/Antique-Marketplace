@@ -55,10 +55,9 @@ export interface OrderStats {
 }
 
 export interface DashboardStats {
-  total_orders: number
+  order_stats: OrderStats
+  total_products: number
+  active_products: number
+  total_users: number
   total_revenue: number
-  total_customers: number
-  total_sellers: number
-  orders_by_status: Record<OrderStatus, number>
-  recent_orders: OrderCard[]
 }
