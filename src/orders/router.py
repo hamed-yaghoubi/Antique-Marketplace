@@ -40,6 +40,7 @@ def read_orders(
     date_to: datetime | None = Query(default=None, alias="date_to"),
     seller_id: int | None = Query(default=None, alias="seller_id"),
     buyer_id: int | None = Query(default=None, alias="buyer_id"),
+    view: str = Query(default="buyer", alias="view"),
     sort_by: str = "created_at",
     sort_order: str = "desc",
 ):
@@ -55,7 +56,7 @@ def read_orders(
         sort_order=sort_order,
     )
 
-    orders, total = service.get_filtered_orders(db, filters, pagination, current_user)
+    orders, total = service.get_filtered_orders(db, filters, pagination, current_user, view=view)
     total_pages = math.ceil(total / pagination.page_size) if total > 0 else 0
 
     return PaginatedOrderResponse(

@@ -63,7 +63,7 @@ export function Sidebar() {
           </NavLink>
         ))}
 
-        {isAuthenticated && !isAdmin && (
+        {isAuthenticated && (
           <>
             <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
               {t.nav.customer}
@@ -79,46 +79,42 @@ export function Sidebar() {
               </NavLink>
             ))}
 
-            <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
-              {t.nav.seller}
-            </div>
-            {sellerItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={navLinkClass}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
-            ))}
+            {!isAdmin && (
+              <>
+                <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
+                  {t.nav.seller}
+                </div>
+                {sellerItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={navLinkClass}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </>
+            )}
 
-            <NavLink
-              to="/profile"
-              className={navLinkClass}
-            >
-              <User className="h-5 w-5" />
-              {t.nav.profile}
-            </NavLink>
-          </>
-        )}
-
-        {isAdmin && (
-          <>
-            <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
-              {t.layout.admin}
-            </div>
-            {adminItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/admin'}
-                className={navLinkClass}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </NavLink>
-            ))}
+            {isAdmin && (
+              <>
+                <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
+                  {t.layout.admin}
+                </div>
+                {adminItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/admin'}
+                    className={navLinkClass}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </>
+            )}
 
             <NavLink
               to="/profile"

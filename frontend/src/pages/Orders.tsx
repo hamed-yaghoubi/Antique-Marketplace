@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
+import { queryKeys } from '@/lib/queryKeys'
 import type { OrderStatus, OrderFilters } from '@/types/orders'
 
 const statusOptions: Array<{ value: OrderStatus; label: string }> = [
@@ -32,7 +33,7 @@ export function Orders() {
   const [filters, setFilters] = useState<OrderFilters>({ page: 1, page_size: 10 })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', filters],
+    queryKey: queryKeys.orders.list(filters),
     queryFn: () => ordersApi.getOrders(filters),
   })
 

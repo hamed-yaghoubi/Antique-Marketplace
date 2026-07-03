@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, formatPrice } from '@/utils/persian'
+import { queryKeys, invalidateProducts, invalidateMyProducts, invalidateDashboards } from '@/lib/queryKeys'
 import type { ProductCard, ProductCategory, ProductCreate, ProductUpdate, ProductImage } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
@@ -21,13 +22,13 @@ const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'clock', label: 'ساعت' },
   { value: 'painting', label: 'نقاشی' },
   { value: 'book', label: 'کتاب' },
-  { value: 'statue', label: ' مجسمه' },
+  { value: 'statue', label: 'مجسمه' },
 ]
 
 const productSchema = z.object({
   title: z.string().min(1, t.validation.required),
   description: z.string().min(1, t.validation.required),
-  price: z.number().min(0, t.validation.positivePrice),
+  price: z.number().gt(0, t.validation.positivePrice),
   quantity: z.number().min(0, t.validation.positiveQuantity),
   category: z.string().min(1, t.validation.required),
 })
@@ -56,7 +57,7 @@ export function MyProducts() {
   }, [filePreviewUrls])
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ['my-products'],
+    queryKey: queryKeys.products.myProducts,
     queryFn: productsApi.getMyProducts,
   })
 
@@ -91,8 +92,9 @@ export function MyProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productCreated)
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      invalidateMyProducts(queryClient)
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
       setSelectedFiles([])
       closeModal()
     },
@@ -114,9 +116,12 @@ export function MyProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productUpdated)
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
+      invalidateMyProducts(queryClient)
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
+      if (editingProductId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(editingProductId) })
+      }
       setSelectedFiles([])
       closeModal()
     },
@@ -127,8 +132,9 @@ export function MyProducts() {
     mutationFn: (id: number) => productsApi.deleteProduct(id),
     onSuccess: () => {
       toast.success(t.admin.productDeleted)
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      invalidateMyProducts(queryClient)
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
       setDeleteId(null)
     },
     onError: () => toast.error(t.admin.deleteFailed),
@@ -140,9 +146,11 @@ export function MyProducts() {
     onSuccess: (_, variables) => {
       toast.success(t.admin.imageDeleted)
       setExistingImages((prev) => prev.filter((img) => img.id !== variables.imageId))
-      queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      if (editingProductId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(editingProductId) })
+      }
+      invalidateMyProducts(queryClient)
+      invalidateProducts(queryClient)
     },
     onError: () => toast.error(t.admin.imageDeleteFailed),
   })

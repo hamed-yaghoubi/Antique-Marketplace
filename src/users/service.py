@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from src.core.exceptions import (
+    ConflictError,
     ForbiddenError,
     SelfBanError,
     SelfDemoteError,
@@ -29,6 +30,11 @@ def get_user_by_username(db: Session, username: str) -> User:
 
 def update_user(db: Session, user: User, data: UserUpdate) -> User:
     update_data = data.model_dump(exclude_unset=True)
+
+    if "username" in update_data and update_data["username"] != user.username:
+        existing = repository.get_by_username(db, update_data["username"])
+        if existing is not None:
+            raise ConflictError("Username already taken")
 
     for field, value in update_data.items():
         setattr(user, field, value)

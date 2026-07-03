@@ -109,7 +109,7 @@ class TestOrderCancel:
             "unit_price": Decimal("50"),
             "quantity": 1,
         }])
-        response = client.get("/orders/", headers=owner_headers)
+        response = client.get("/orders/?view=seller", headers=owner_headers)
         assert response.status_code == 200
         assert response.json()["total"] >= 1
 
@@ -141,18 +141,12 @@ class TestOrderCancel:
         assert response.status_code == 403
 
     def test_customer_cannot_confirm_order_via_confirm_endpoint(self, client, auth_headers, regular_user, order_factory):
-        """Customers can only cancel orders, not advance through the lifecycle.
-
-        The backend currently allows customers to transition PENDING->CONFIRMED
-        because the role restriction only applies to cancellations. This test
-        documents the current behavior.
-        """
+        """Customers cannot advance order status — only sellers/admins can."""
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))
         response = client.patch(f"/orders/{order.id}/status", json={
             "status": "confirmed",
         }, headers=auth_headers)
-        assert response.status_code == 200
-        assert response.json()["status"] == "confirmed"
+        assert response.status_code == 403
 
     def test_admin_view_all_orders(self, client, product_factory, admin_user, admin_headers, regular_user, owner_user, order_factory):
         product = product_factory(title="AnyProduct", seller_id=owner_user.id, quantity=5)
@@ -163,7 +157,7 @@ class TestOrderCancel:
             "unit_price": Decimal("50"),
             "quantity": 1,
         }])
-        response = client.get("/orders/", headers=admin_headers)
+        response = client.get("/orders/?view=all", headers=admin_headers)
         assert response.status_code == 200
         assert response.json()["total"] >= 1
 
@@ -255,17 +249,13 @@ class TestStatusTransitions:
         }, headers=owner_headers)
         assert response.status_code == 400
 
-    def test_customer_can_advance_pending_to_confirmed(self, client, auth_headers, order_factory, regular_user):
-        """Backend allows any authenticated user to transition PENDING->CONFIRMED.
-
-        The role restriction only applies to cancellation, not to advancing status.
-        """
+    def test_customer_cannot_advance_pending_to_confirmed(self, client, auth_headers, order_factory, regular_user):
+        """Customers can only cancel, not advance status."""
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))
         response = client.patch(f"/orders/{order.id}/status", json={
             "status": "confirmed",
         }, headers=auth_headers)
-        assert response.status_code == 200
-        assert response.json()["status"] == "confirmed"
+        assert response.status_code == 403
 
     def test_customer_can_cancel_pending_order(self, client, auth_headers, order_factory, regular_user):
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))
@@ -386,7 +376,7 @@ class TestOrderFiltering:
             "quantity": 1,
         }])
 
-        response = client.get("/orders/", headers=owner_headers)
+        response = client.get("/orders/?view=seller", headers=owner_headers)
         assert response.status_code == 200
         data = response.json()
         assert data["total"] == 1

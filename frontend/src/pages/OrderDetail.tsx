@@ -11,7 +11,9 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalaliDateTime } from '@/utils/persian'
+import { queryKeys, invalidateOrders, invalidateProducts, invalidateMyProducts, invalidateDashboards } from '@/lib/queryKeys'
 import type { OrderStatus } from '@/types/orders'
+import { getValidTransitions } from '@/types/orders'
 
 const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
   pending: { label: t.orders.pending, variant: 'warning' },
@@ -94,7 +96,7 @@ export function OrderDetail() {
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   const { data: order, isLoading, error } = useQuery({
-    queryKey: ['order', id],
+    queryKey: queryKeys.orders.detail(Number(id)),
     queryFn: () => ordersApi.getOrder(Number(id)),
     enabled: !!id,
   })
@@ -103,13 +105,13 @@ export function OrderDetail() {
     mutationFn: () => ordersApi.cancelOrder(Number(id)),
     onSuccess: () => {
       toast.success(t.orders.cancelSuccess)
-      queryClient.invalidateQueries({ queryKey: ['order', id] })
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
+      invalidateOrders(queryClient)
+      invalidateProducts(queryClient)
+      invalidateMyProducts(queryClient)
+      invalidateDashboards(queryClient)
       if (order?.items) {
         for (const item of order.items) {
-          queryClient.invalidateQueries({ queryKey: ['product', item.product_id] })
+          queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(item.product_id) })
         }
       }
       setShowCancelModal(false)
@@ -143,9 +145,10 @@ export function OrderDetail() {
     )
   }
 
-  const status = statusMap[order.status] || { label: order.status, variant: 'default' as const }
-  const canCancel = order.status === 'pending' && user?.role === 'user'
   const isSeller = user?.role === 'admin' || user?.role === 'owner'
+  const status = statusMap[order.status] || { label: order.status, variant: 'default' as const }
+  const validTransitions = getValidTransitions(order.status, isSeller)
+  const canCancel = validTransitions.includes('cancelled')
 
   return (
     <div>
@@ -163,9 +166,6 @@ export function OrderDetail() {
             {t.orders.orderNumber} {toPersianNumbers(order.id)}
           </h1>
           <p className="mt-1 text-sm text-antique-sepia-light">{formatJalaliDateTime(order.created_at)}</p>
-          <p className="text-xs text-antique-sepia-light">
-            {t.orders.status}: {formatJalaliDateTime(order.updated_at)}
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant={status.variant}>{status.label}</Badge>
@@ -184,20 +184,8 @@ export function OrderDetail() {
         <div className="divide-y divide-antique-gold/10">
           {order.items.map((item) => (
             <div key={item.id} className="flex items-center gap-4 py-4">
-              {item.product_image_url && (
-                <img
-                  src={item.product_image_url}
-                  alt={item.product_title}
-                  className="h-16 w-16 rounded-lg object-cover"
-                />
-              )}
               <div className="flex-1">
                 <p className="font-semibold text-antique-wood">{item.product_title}</p>
-                {isSeller && (
-                  <p className="text-sm text-antique-sepia-light">
-                    {t.orders.seller}: {item.seller_name}
-                  </p>
-                )}
                 <p className="text-sm text-antique-sepia-light">
                   {toPersianNumbers(item.quantity)} × {formatPrice(item.unit_price)}
                 </p>
@@ -213,13 +201,6 @@ export function OrderDetail() {
           </div>
         </div>
       </div>
-
-      {isSeller && (
-        <div className="card">
-          <h2 className="mb-4 text-lg font-bold text-antique-wood">{t.orders.buyer}</h2>
-          <p className="text-antique-wood">{order.buyer_username}</p>
-        </div>
-      )}
 
       <Modal isOpen={showCancelModal} onClose={() => setShowCancelModal(false)} title={t.orders.cancelOrder} size="sm">
         <p className="text-sm text-antique-sepia-light">{t.orders.cancelConfirm}</p>

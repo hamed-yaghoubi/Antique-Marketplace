@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { t, toPersianNumbers, formatPrice } from '@/utils/persian'
+import { queryKeys, invalidateCart } from '@/lib/queryKeys'
 import type { ProductFilters, ProductCategory } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
@@ -19,7 +20,7 @@ const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'clock', label: 'ساعت' },
   { value: 'painting', label: 'نقاشی' },
   { value: 'book', label: 'کتاب' },
-  { value: 'statue', label: ' مجسمه' },
+  { value: 'statue', label: 'مجسمه' },
 ]
 
 const sortOptions = [
@@ -40,7 +41,7 @@ export function Products() {
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['products', filters],
+    queryKey: queryKeys.products.list(filters),
     queryFn: () => productsApi.getProducts(filters),
   })
 
@@ -48,7 +49,7 @@ export function Products() {
     mutationFn: (productId: number) => cartApi.addItem({ product_id: productId, quantity: 1 }),
     onSuccess: () => {
       toast.success(t.cart.itemAdded)
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      invalidateCart(queryClient)
     },
     onError: (error: Error) => {
       toast.error(error.message || t.cart.addToCartFailed)

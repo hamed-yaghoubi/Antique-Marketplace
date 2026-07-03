@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, formatJalali, formatPrice } from '@/utils/persian'
+import { queryKeys } from '@/lib/queryKeys'
 import type { ProductCategory } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
@@ -15,20 +16,20 @@ const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'clock', label: 'ساعت' },
   { value: 'painting', label: 'نقاشی' },
   { value: 'book', label: 'کتاب' },
-  { value: 'statue', label: ' مجسمه' },
+  { value: 'statue', label: 'مجسمه' },
 ]
 
 export function AdminUserProfile() {
   const { id } = useParams<{ id: string }>()
 
   const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['admin-user', id],
+    queryKey: queryKeys.users.detail(Number(id)),
     queryFn: () => adminApi.getUser(Number(id)),
     enabled: !!id,
   })
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['admin-user-products', id],
+    queryKey: queryKeys.products.userProducts(Number(id)),
     queryFn: () => productsApi.getProducts({ seller_id: Number(id), page: 1, page_size: 100 }),
     enabled: !!id,
   })

@@ -62,13 +62,17 @@ def get_filtered(
     filters: OrderFilter,
     pagination: PaginationParams,
     seller_id: int | None = None,
+    buyer_id: int | None = None,
 ) -> tuple[list[Order], int]:
     query = select(Order)
+
+    if buyer_id is not None:
+        query = query.where(Order.buyer_id == buyer_id)
 
     if filters.search:
         search_term = f"%{filters.search}%"
         query = query.join(Order.buyer, isouter=True).where(
-            (Order.id.ilike(search_term))
+            (Order.id == filters.search.strip())
             | (User.username.ilike(search_term))
         )
 
@@ -132,11 +136,10 @@ def get_order_stats(
 
     if seller_id is not None:
         base_query = (
-            select(func.count())
+            select(func.count(Order.id).distinct())
             .select_from(Order)
             .join(OrderItem, OrderItem.order_id == Order.id)
             .where(OrderItem.seller_id == seller_id)
-            .distinct()
         )
 
     total = db.execute(base_query).scalar() or 0
@@ -150,11 +153,10 @@ def get_order_stats(
             q = q.where(Order.buyer_id == buyer_id)
         if seller_id is not None:
             q = (
-                select(func.count())
+                select(func.count(Order.id).distinct())
                 .select_from(Order)
                 .join(OrderItem, OrderItem.order_id == Order.id)
                 .where(Order.status == status, OrderItem.seller_id == seller_id)
-                .distinct()
             )
         stats[status] = db.execute(q).scalar() or 0
 
@@ -176,17 +178,27 @@ def get_dashboard_stats(
                 Product.seller_id == seller_id, Product.is_active == True
             )
         ).scalar() or 0
+        out_of_stock_products = db.execute(
+            select(func.count()).select_from(Product).where(
+                Product.seller_id == seller_id, Product.quantity <= 0
+            )
+        ).scalar() or 0
         total_users = 0
 
-        revenue_query = (
-            select(func.coalesce(func.sum(Order.total_price), 0))
-            .select_from(Order)
+        seller_order_ids = (
+            select(Order.id)
             .join(OrderItem, OrderItem.order_id == Order.id)
             .where(
                 OrderItem.seller_id == seller_id,
                 Order.status.in_(["confirmed", "preparing", "shipped", "delivered"]),
             )
             .distinct()
+            .subquery()
+        )
+        revenue_query = (
+            select(func.coalesce(func.sum(Order.total_price), 0))
+            .select_from(Order)
+            .where(Order.id.in_(select(seller_order_ids.c.id)))
         )
         total_revenue = db.execute(revenue_query).scalar() or Decimal("0.00")
     else:
@@ -195,6 +207,9 @@ def get_dashboard_stats(
         ).scalar() or 0
         active_products = db.execute(
             select(func.count()).select_from(Product).where(Product.is_active == True)
+        ).scalar() or 0
+        out_of_stock_products = db.execute(
+            select(func.count()).select_from(Product).where(Product.quantity <= 0)
         ).scalar() or 0
         total_users = db.execute(
             select(func.count()).select_from(User)
@@ -213,6 +228,7 @@ def get_dashboard_stats(
         "order_stats": order_stats,
         "total_products": total_products,
         "active_products": active_products,
+        "out_of_stock_products": out_of_stock_products,
         "total_users": total_users,
         "total_revenue": total_revenue,
     }

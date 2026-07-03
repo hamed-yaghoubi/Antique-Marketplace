@@ -7,7 +7,15 @@ from src.orders.models import OrderItem
 
 
 def get_by_id(db: Session, product_id: int) -> Product | None:
-    return db.get(Product, product_id)
+    query = (
+        select(Product)
+        .where(Product.id == product_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.seller),
+        )
+    )
+    return db.execute(query).scalars().unique().one_or_none()
 
 
 def get_all(db: Session) -> list[Product]:

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, formatJalali } from '@/utils/persian'
+import { queryKeys, invalidateUsers, invalidateDashboards } from '@/lib/queryKeys'
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import type { User } from '@/types/auth'
@@ -23,7 +24,7 @@ export function AdminUsers() {
   const [demoteTarget, setDemoteTarget] = useState<User | null>(null)
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['admin-users'],
+    queryKey: queryKeys.users.all,
     queryFn: adminApi.getUsers,
   })
 
@@ -31,7 +32,7 @@ export function AdminUsers() {
     mutationFn: (userId: number) => adminApi.banUser(userId),
     onSuccess: () => {
       toast.success(t.admin.userBanned)
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      invalidateUsers(queryClient)
       setBanTarget(null)
     },
     onError: () => toast.error(t.admin.banFailed),
@@ -41,7 +42,7 @@ export function AdminUsers() {
     mutationFn: (userId: number) => adminApi.unbanUser(userId),
     onSuccess: () => {
       toast.success(t.admin.userUnbanned)
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      invalidateUsers(queryClient)
       setUnbanTarget(null)
     },
     onError: () => toast.error(t.admin.unbanFailed),
@@ -51,7 +52,8 @@ export function AdminUsers() {
     mutationFn: (userId: number) => adminApi.promoteUser(userId),
     onSuccess: () => {
       toast.success(t.admin.userPromoted)
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      invalidateUsers(queryClient)
+      invalidateDashboards(queryClient)
       setPromoteTarget(null)
     },
     onError: () => toast.error(t.admin.promoteFailed),
@@ -61,7 +63,8 @@ export function AdminUsers() {
     mutationFn: (userId: number) => adminApi.demoteUser(userId),
     onSuccess: () => {
       toast.success(t.admin.userDemoted)
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      invalidateUsers(queryClient)
+      invalidateDashboards(queryClient)
       setDemoteTarget(null)
     },
     onError: () => toast.error(t.admin.demoteFailed),

@@ -8,13 +8,14 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice } from '@/utils/persian'
+import { queryKeys, invalidateCart, invalidateOrders, invalidateProducts, invalidateMyProducts, invalidateDashboards } from '@/lib/queryKeys'
 
 export function Cart() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   const { data: cart, isLoading } = useQuery({
-    queryKey: ['cart'],
+    queryKey: queryKeys.cart.all,
     queryFn: cartApi.getCart,
   })
 
@@ -22,7 +23,7 @@ export function Cart() {
     mutationFn: ({ itemId, quantity }: { itemId: number; quantity: number }) =>
       cartApi.updateItem(itemId, { quantity }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      invalidateCart(queryClient)
     },
     onError: () => toast.error(t.cart.updateFailed),
   })
@@ -31,7 +32,7 @@ export function Cart() {
     mutationFn: (itemId: number) => cartApi.removeItem(itemId),
     onSuccess: () => {
       toast.success(t.cart.itemRemoved)
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      invalidateCart(queryClient)
     },
     onError: () => toast.error(t.cart.removeFailed),
   })
@@ -40,7 +41,7 @@ export function Cart() {
     mutationFn: () => cartApi.clearCart(),
     onSuccess: () => {
       toast.success(t.cart.cartCleared)
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      invalidateCart(queryClient)
     },
   })
 
@@ -48,13 +49,14 @@ export function Cart() {
     mutationFn: () => ordersApi.createOrder(),
     onSuccess: (order) => {
       toast.success(t.orders.createSuccess)
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['my-products'] })
+      invalidateCart(queryClient)
+      invalidateOrders(queryClient)
+      invalidateProducts(queryClient)
+      invalidateMyProducts(queryClient)
+      invalidateDashboards(queryClient)
       if (cart?.items) {
         for (const item of cart.items) {
-          queryClient.invalidateQueries({ queryKey: ['product', item.product.id] })
+          queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(item.product.id) })
         }
       }
       navigate(`/orders/${order.id}`)

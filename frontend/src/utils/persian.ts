@@ -31,7 +31,7 @@ export const t = {
     myProducts: 'محصولات من',
     myOrders: 'سفارشات من',
     sellerOrders: 'سفارشات فروش',
-    adminOrders: 'سفارشات مدیریت',
+    adminOrders: 'مدیریت سفارشات',
     manageUsers: 'مدیریت کاربران',
     customer: 'مشتری',
     seller: 'فروشنده',
@@ -238,7 +238,7 @@ export const t = {
   },
   validation: {
     required: 'این فیلد الزامی است',
-    positivePrice: 'قیمت باید مثبت باشد',
+    positivePrice: 'قیمت باید بیشتر از صفر باشد',
     positiveQuantity: 'تعداد باید مثبت باشد',
   },
   notFound: {

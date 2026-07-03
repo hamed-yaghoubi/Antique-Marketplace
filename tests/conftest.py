@@ -195,7 +195,7 @@ def order_factory(db_session):
         buyer_id: int,
         status: OrderStatus = OrderStatus.PENDING,
         total_price: Decimal = Decimal("0"),
-        items: list = None,
+        items: list | None = None,
     ) -> Order:
         order = Order(
             buyer_id=buyer_id,

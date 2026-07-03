@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
+import { queryKeys } from '@/lib/queryKeys'
 import type { OrderStatus } from '@/types/orders'
 
 const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
@@ -22,13 +23,13 @@ export function CustomerDashboard() {
   const { user } = useAuth()
 
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['customer-orders'],
-    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 5 }),
+    queryKey: queryKeys.orders.customerRecent,
+    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 5, view: 'buyer' }),
   })
 
-  const { data: allOrdersData, isLoading: statsLoading } = useQuery({
-    queryKey: ['customer-order-stats'],
-    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 100 }),
+  const { data: orderStats, isLoading: statsLoading } = useQuery({
+    queryKey: queryKeys.orders.customerStats,
+    queryFn: ordersApi.getOrderStats,
   })
 
   const isLoading = ordersLoading || statsLoading
@@ -50,19 +51,11 @@ export function CustomerDashboard() {
     )
   }
 
-  const allOrders = allOrdersData?.items ?? []
-  const orderStats = {
-    total: allOrdersData?.total ?? 0,
-    pending: allOrders.filter((o) => o.status === 'pending').length,
-    delivered: allOrders.filter((o) => o.status === 'delivered').length,
-    cancelled: allOrders.filter((o) => o.status === 'cancelled').length,
-  }
-
   const orderStatCards = [
-    { label: t.dashboard.customer.totalOrders, value: orderStats.total, icon: Package, color: 'text-antique-gold bg-antique-gold/10' },
-    { label: t.dashboard.customer.pendingOrders, value: orderStats.pending, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: t.dashboard.customer.deliveredOrders, value: orderStats.delivered, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-    { label: t.dashboard.customer.cancelledOrders, value: orderStats.cancelled, icon: XCircle, color: 'text-red-600 bg-red-50' },
+    { label: t.dashboard.customer.totalOrders, value: orderStats?.total ?? 0, icon: Package, color: 'text-antique-gold bg-antique-gold/10' },
+    { label: t.dashboard.customer.pendingOrders, value: orderStats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+    { label: t.dashboard.customer.deliveredOrders, value: orderStats?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
+    { label: t.dashboard.customer.cancelledOrders, value: orderStats?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
   ]
 
   return (

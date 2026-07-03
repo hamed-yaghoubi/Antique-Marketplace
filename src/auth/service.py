@@ -75,10 +75,6 @@ def refresh_tokens(db: Session, refresh_token_value: str) -> TokenResponse:
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
-def logout() -> None:
-    pass 
-
-
 def change_password(db: Session, user: User, data: ChangePasswordRequest) -> None:
     if not security.verify_password(data.current_password, user.hashed_password):
         raise InvalidCredentialsError()

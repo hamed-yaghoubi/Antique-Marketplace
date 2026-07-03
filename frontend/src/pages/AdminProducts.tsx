@@ -15,6 +15,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice } from '@/utils/persian'
+import { useAuth } from '@/contexts/AuthContext'
+import { queryKeys, invalidateProducts, invalidateDashboards } from '@/lib/queryKeys'
 import type { ProductCard, ProductFilters, ProductCategory, ProductCreate, ProductUpdate, ProductImage } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
@@ -22,13 +24,13 @@ const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'clock', label: 'ساعت' },
   { value: 'painting', label: 'نقاشی' },
   { value: 'book', label: 'کتاب' },
-  { value: 'statue', label: ' مجسمه' },
+  { value: 'statue', label: 'مجسمه' },
 ]
 
 const productSchema = z.object({
   title: z.string().min(1, t.validation.required),
   description: z.string().min(1, t.validation.required),
-  price: z.number().min(0, t.validation.positivePrice),
+  price: z.number().gt(0, t.validation.positivePrice),
   quantity: z.number().min(0, t.validation.positiveQuantity),
   category: z.string().min(1, t.validation.required),
 })
@@ -37,6 +39,7 @@ type ProductForm = z.infer<typeof productSchema>
 
 export function AdminProducts() {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, page_size: 10, sort_by: 'created_at', sort_order: 'desc' })
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -58,7 +61,7 @@ export function AdminProducts() {
   }, [filePreviewUrls])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-products', filters],
+    queryKey: queryKeys.products.adminList(filters),
     queryFn: () => productsApi.getProducts(filters),
   })
 
@@ -93,8 +96,8 @@ export function AdminProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productCreated)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
       setSelectedFiles([])
       closeModal()
     },
@@ -116,9 +119,11 @@ export function AdminProducts() {
         setIsUploading(false)
       }
       toast.success(t.admin.productUpdated)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
+      if (editingProductId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(editingProductId) })
+      }
       setSelectedFiles([])
       closeModal()
     },
@@ -129,8 +134,8 @@ export function AdminProducts() {
     mutationFn: (id: number) => adminApi.deleteProduct(id),
     onSuccess: () => {
       toast.success(t.admin.productDeleted)
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      invalidateProducts(queryClient)
+      invalidateDashboards(queryClient)
       setDeleteId(null)
     },
     onError: () => toast.error(t.admin.deleteFailed),
@@ -142,9 +147,10 @@ export function AdminProducts() {
     onSuccess: (_, variables) => {
       toast.success(t.admin.imageDeleted)
       setExistingImages((prev) => prev.filter((img) => img.id !== variables.imageId))
-      queryClient.invalidateQueries({ queryKey: ['product', editingProductId] })
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
+      if (editingProductId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(editingProductId) })
+      }
+      invalidateProducts(queryClient)
     },
     onError: () => toast.error(t.admin.imageDeleteFailed),
   })
@@ -305,9 +311,11 @@ export function AdminProducts() {
                   <td className="px-6 py-4 text-sm text-antique-sepia-light">{product.seller ?? '-'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => openEditModal(product as ProductCard)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors">
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                      {product.seller_id === user?.id && (
+                        <button onClick={() => openEditModal(product as ProductCard)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
                       <button onClick={() => setDeleteId(product.id)} className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-red-100 hover:text-red-600 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>

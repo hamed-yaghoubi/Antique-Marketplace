@@ -18,6 +18,7 @@ export const ordersApi = {
       if (filters.page_size) params.append('page_size', String(filters.page_size))
       if (filters.sort_by) params.append('sort_by', filters.sort_by)
       if (filters.sort_order) params.append('sort_order', filters.sort_order)
+      if (filters.view) params.append('view', filters.view)
     }
     const response = await api.get('/orders/', { params })
     return response.data

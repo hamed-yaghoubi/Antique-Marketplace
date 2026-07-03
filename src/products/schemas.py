@@ -35,7 +35,7 @@ class ProductResponse(ProductBase):
 class ProductUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    price: Decimal | None = None
+    price: Decimal | None = Field(default=None, gt=0)
     quantity: int | None = Field(default=None, ge=0)
     category: ProductCategory | None = None
     is_active: bool | None = None

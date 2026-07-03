@@ -87,12 +87,18 @@ def get_filtered_orders(
     filters: OrderFilter,
     pagination: PaginationParams,
     current_user: User,
+    view: str = "buyer",
 ) -> tuple[list[Order], int]:
     seller_id = None
-    if current_user.role == UserRole.OWNER:
-        seller_id = current_user.id
+    buyer_id = None
 
-    return repository.get_filtered(db, filters, pagination, seller_id=seller_id)
+    if view == "seller":
+        seller_id = current_user.id
+    elif view == "buyer":
+        buyer_id = current_user.id
+    # view="all" leaves both as None — no identity filter applied
+
+    return repository.get_filtered(db, filters, pagination, seller_id=seller_id, buyer_id=buyer_id)
 
 
 def get_orders(db: Session, current_user: User) -> list[Order]:
@@ -149,6 +155,10 @@ def update_order_status(db: Session, order_id: int, data: OrderStatusUpdate, cur
         allowed_cancel_statuses = CANCELLATION_BY_ROLE.get(current_user.role, [])
         if order.status not in allowed_cancel_statuses:
             raise OrderCannotBeCancelledError()
+    else:
+        # Only sellers/admins/owners can advance order status
+        if current_user.role == UserRole.USER:
+            raise ForbiddenError("Only sellers can update order status")
 
     # Restore inventory on cancellation
     if data.status == OrderStatus.CANCELLED and order.status != OrderStatus.CANCELLED:

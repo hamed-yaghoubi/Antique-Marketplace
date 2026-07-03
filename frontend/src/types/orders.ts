@@ -6,9 +6,6 @@ export interface OrderItem {
   product_title: string
   unit_price: number
   quantity: number
-  seller_id: number
-  seller_name: string
-  product_image_url: string
 }
 
 export interface OrderResponse {
@@ -16,8 +13,6 @@ export interface OrderResponse {
   status: OrderStatus
   total_price: number
   created_at: string
-  updated_at: string
-  buyer_username: string
   items: OrderItem[]
 }
 
@@ -26,8 +21,7 @@ export interface OrderCard {
   status: OrderStatus
   total_price: number
   created_at: string
-  buyer_username: string
-  item_count: number
+  buyer_username: string | null
 }
 
 export interface OrderFilters {
@@ -37,6 +31,7 @@ export interface OrderFilters {
   page_size?: number
   sort_by?: string
   sort_order?: 'asc' | 'desc'
+  view?: 'buyer' | 'seller' | 'all'
 }
 
 export interface PaginatedOrderResponse {
@@ -48,16 +43,41 @@ export interface PaginatedOrderResponse {
 }
 
 export interface OrderStats {
-  total_orders: number
-  total_revenue: number
-  orders_by_status: Record<OrderStatus, number>
-  average_order_value: number
+  total: number
+  pending: number
+  confirmed: number
+  preparing: number
+  shipped: number
+  delivered: number
+  cancelled: number
 }
 
 export interface DashboardStats {
   order_stats: OrderStats
   total_products: number
   active_products: number
+  out_of_stock_products: number
   total_users: number
   total_revenue: number
+}
+
+export const validStatusTransitions: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
+}
+
+export function getValidTransitions(currentStatus: OrderStatus, isAdmin: boolean): OrderStatus[] {
+  const buyerTransitions: Partial<Record<OrderStatus, OrderStatus[]>> = {
+    pending: ['cancelled'],
+  }
+
+  if (isAdmin) {
+    return validStatusTransitions[currentStatus]
+  }
+
+  return buyerTransitions[currentStatus] ?? []
 }

@@ -6,6 +6,7 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Badge } from '@/components/ui/Badge'
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
+import { queryKeys } from '@/lib/queryKeys'
 import type { OrderStatus } from '@/types/orders'
 
 const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
@@ -19,13 +20,13 @@ const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'succ
 
 export function AdminDashboard() {
   const { data: dashStats, isLoading: dashLoading } = useQuery({
-    queryKey: ['admin-dashboard-stats'],
+    queryKey: queryKeys.orders.adminDashboard,
     queryFn: () => ordersApi.getDashboardStats(),
   })
 
   const { data: recentOrdersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-recent-orders'],
-    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 5 }),
+    queryKey: queryKeys.orders.adminRecent,
+    queryFn: () => ordersApi.getOrders({ page: 1, page_size: 5, view: 'all' }),
   })
 
   const isLoading = dashLoading || ordersLoading
@@ -48,7 +49,7 @@ export function AdminDashboard() {
   }
 
   const orderStats = dashStats?.order_stats
-  const outOfStock = (dashStats?.total_products ?? 0) - (dashStats?.active_products ?? 0)
+  const outOfStock = dashStats?.out_of_stock_products ?? 0
 
   const statCards = [
     {
@@ -78,10 +79,10 @@ export function AdminDashboard() {
   ]
 
   const orderStatCards = [
-    { label: t.orders.pending, value: orderStats?.orders_by_status?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
-    { label: t.orders.confirmed, value: orderStats?.orders_by_status?.confirmed ?? 0, icon: Package, color: 'text-blue-600 bg-blue-50' },
-    { label: t.orders.delivered, value: orderStats?.orders_by_status?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-    { label: t.orders.cancelled, value: orderStats?.orders_by_status?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
+    { label: t.orders.pending, value: orderStats?.pending ?? 0, icon: Clock, color: 'text-amber-600 bg-amber-50' },
+    { label: t.orders.confirmed, value: orderStats?.confirmed ?? 0, icon: Package, color: 'text-blue-600 bg-blue-50' },
+    { label: t.orders.delivered, value: orderStats?.delivered ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
+    { label: t.orders.cancelled, value: orderStats?.cancelled ?? 0, icon: XCircle, color: 'text-red-600 bg-red-50' },
   ]
 
   return (

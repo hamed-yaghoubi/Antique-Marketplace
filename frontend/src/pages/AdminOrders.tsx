@@ -10,7 +10,9 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
+import { queryKeys, invalidateOrders, invalidateDashboards } from '@/lib/queryKeys'
 import type { OrderStatus, OrderFilters } from '@/types/orders'
+import { getValidTransitions } from '@/types/orders'
 
 const statusOptions: Array<{ value: OrderStatus; label: string }> = [
   { value: 'pending', label: t.orders.pending },
@@ -35,10 +37,11 @@ export function AdminOrders() {
   const [filters, setFilters] = useState<OrderFilters>({ page: 1, page_size: 10 })
   const [statusModalOrderId, setStatusModalOrderId] = useState<number | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending')
+  const [currentOrderStatus, setCurrentOrderStatus] = useState<OrderStatus>('pending')
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-orders', filters],
-    queryFn: () => ordersApi.getOrders(filters),
+    queryKey: queryKeys.orders.adminList(filters),
+    queryFn: () => ordersApi.getOrders({ ...filters, view: 'all' }),
   })
 
   const statusMutation = useMutation({
@@ -46,11 +49,14 @@ export function AdminOrders() {
       ordersApi.updateOrderStatus(id, status),
     onSuccess: () => {
       toast.success(t.orders.management.statusUpdated)
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      invalidateOrders(queryClient)
+      invalidateDashboards(queryClient)
       setStatusModalOrderId(null)
     },
     onError: () => toast.error(t.orders.management.statusUpdateFailed),
   })
+
+  const validStatuses = getValidTransitions(currentOrderStatus, true)
 
   const updateFilter = (key: keyof OrderFilters, value: string | number | undefined) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }))
@@ -58,6 +64,7 @@ export function AdminOrders() {
 
   const openStatusModal = (orderId: number, currentStatus: OrderStatus) => {
     setStatusModalOrderId(orderId)
+    setCurrentOrderStatus(currentStatus)
     setSelectedStatus(currentStatus)
   }
 
@@ -113,7 +120,6 @@ export function AdminOrders() {
               <tr className="border-b-2 border-antique-gold/20 bg-antique-gold/5">
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.orderNumber}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.buyer}</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.itemCount}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.status}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.total}</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-antique-wood">{t.orders.date}</th>
@@ -129,7 +135,6 @@ export function AdminOrders() {
                       <span className="font-semibold text-antique-wood">#{toPersianNumbers(order.id)}</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-antique-wood">{order.buyer_username}</td>
-                    <td className="px-6 py-4 text-sm text-antique-wood">{toPersianNumbers(order.item_count)}</td>
                     <td className="px-6 py-4">
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </td>
@@ -156,7 +161,7 @@ export function AdminOrders() {
               })}
               {data?.items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center">
+                  <td colSpan={6} className="px-6 py-16 text-center">
                     <ListOrdered className="mx-auto h-12 w-12 text-antique-gold/30" />
                     <p className="mt-4 text-sm text-antique-sepia-light">{t.orders.empty}</p>
                   </td>
@@ -190,11 +195,14 @@ export function AdminOrders() {
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
         >
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
+          <option value={currentOrderStatus}>{statusMap[currentOrderStatus].label}</option>
+          {statusOptions
+            .filter((opt) => validStatuses.includes(opt.value))
+            .map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
         </select>
         <div className="flex justify-start gap-3 mt-6">
           <Button variant="secondary" onClick={() => setStatusModalOrderId(null)}>{t.admin.cancel}</Button>

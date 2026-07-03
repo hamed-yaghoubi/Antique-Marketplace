@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useAuth } from '@/contexts/AuthContext'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
+import { queryKeys, invalidateCart } from '@/lib/queryKeys'
 import type { ProductCategory } from '@/types/products'
 
 const categories: Array<{ value: ProductCategory; label: string }> = [
@@ -17,7 +18,7 @@ const categories: Array<{ value: ProductCategory; label: string }> = [
   { value: 'clock', label: 'ساعت' },
   { value: 'painting', label: 'نقاشی' },
   { value: 'book', label: 'کتاب' },
-  { value: 'statue', label: ' مجسمه' },
+  { value: 'statue', label: 'مجسمه' },
 ]
 
 export function ProductDetail() {
@@ -27,7 +28,7 @@ export function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   const { data: product, isLoading, error } = useQuery({
-    queryKey: ['product', Number(id)],
+    queryKey: queryKeys.products.detail(Number(id)),
     queryFn: () => productsApi.getProduct(Number(id)),
     enabled: !!id,
   })
@@ -42,7 +43,7 @@ export function ProductDetail() {
     mutationFn: (productId: number) => cartApi.addItem({ product_id: productId, quantity: 1 }),
     onSuccess: () => {
       toast.success(t.cart.itemAdded)
-      queryClient.invalidateQueries({ queryKey: ['cart'] })
+      invalidateCart(queryClient)
     },
     onError: (error: Error) => {
       toast.error(error.message || t.cart.addToCartFailed)
