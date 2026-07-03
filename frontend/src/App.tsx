@@ -50,9 +50,9 @@ export default function App() {
                   <Route path="/orders/:id" element={<OrderDetail />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/my-products" element={<MyProducts />} />
-                  <Route path="/seller" element={<SellerDashboard />} />
+                  <Route path="/seller/dashboard" element={<SellerDashboard />} />
                   <Route path="/seller/orders" element={<SellerOrders />} />
-                  <Route path="/dashboard" element={<CustomerDashboard />} />
+                  <Route path="/customer/dashboard" element={<CustomerDashboard />} />
                   <Route element={<ProtectedRoute requireAdmin />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/products" element={<AdminProducts />} />
