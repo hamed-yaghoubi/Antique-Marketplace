@@ -18,6 +18,7 @@ import { AdminProducts } from '@/pages/AdminProducts'
 import { AdminUsers } from '@/pages/AdminUsers'
 import { AdminUserProfile } from '@/pages/AdminUserProfile'
 import { AdminOrders } from '@/pages/AdminOrders'
+import { SellerOrders } from '@/pages/SellerOrders'
 import { NotFound } from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ export default function App() {
                   <Route path="/orders/:id" element={<OrderDetail />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/my-products" element={<MyProducts />} />
+                  <Route path="/seller/orders" element={<SellerOrders />} />
                   <Route element={<ProtectedRoute requireAdmin />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/products" element={<AdminProducts />} />

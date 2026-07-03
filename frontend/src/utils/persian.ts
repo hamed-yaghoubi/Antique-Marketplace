@@ -29,6 +29,7 @@ export const t = {
     orders: 'سفارشات',
     profile: 'پروفایل',
     myProducts: 'محصولات من',
+    sellerOrders: 'سفارشات فروش',
     manageUsers: 'مدیریت کاربران',
   },
   auth: {
@@ -176,6 +177,7 @@ export const t = {
     confirmDemote: 'آیا از تنزل این کاربر به کاربر عادی اطمینان دارید؟',
     searchUsers: 'جستجوی کاربران...',
     searchPlaceholder: 'جستجو بر اساس نام کاربری',
+  },
   dashboard: {
     customer: {
       totalOrders: 'تعداد سفارشات',
@@ -226,6 +228,8 @@ export const t = {
   },
   orders: {
     title: 'سفارشات',
+    sellerOrders: 'سفارشات فروش',
+    sellerOrdersDescription: 'مشاهده و مدیریت سفارشات حاوی محصولات شما',
     empty: 'شما هنوز سفارشی ثبت نکرده‌اید',
     orderNumber: 'شماره سفارش',
     date: 'تاریخ',
