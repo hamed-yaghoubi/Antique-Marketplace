@@ -16,6 +16,8 @@ import { MyProducts } from '@/pages/MyProducts'
 import { AdminDashboard } from '@/pages/AdminDashboard'
 import { AdminProducts } from '@/pages/AdminProducts'
 import { AdminUsers } from '@/pages/AdminUsers'
+import { AdminUserProfile } from '@/pages/AdminUserProfile'
+import { AdminOrders } from '@/pages/AdminOrders'
 import { NotFound } from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
@@ -48,7 +50,9 @@ export default function App() {
                   <Route element={<ProtectedRoute requireAdmin />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/products" element={<AdminProducts />} />
+                    <Route path="/admin/orders" element={<AdminOrders />} />
                     <Route path="/admin/users" element={<AdminUsers />} />
+                    <Route path="/admin/users/:id" element={<AdminUserProfile />} />
                   </Route>
                 </Route>
               </Route>
