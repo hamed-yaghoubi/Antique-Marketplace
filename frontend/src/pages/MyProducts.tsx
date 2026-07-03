@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -43,6 +43,17 @@ export function MyProducts() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<ProductImage[]>([])
   const [isUploading, setIsUploading] = useState(false)
+
+  // Create object URLs for selected files and revoke them on cleanup
+  const filePreviewUrls = useMemo(() => {
+    return selectedFiles.map((file) => URL.createObjectURL(file))
+  }, [selectedFiles])
+
+  useEffect(() => {
+    return () => {
+      filePreviewUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [filePreviewUrls])
 
   const { data: products, isLoading } = useQuery({
     queryKey: ['my-products'],
@@ -306,9 +317,9 @@ export function MyProducts() {
             )}
             {selectedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {selectedFiles.map((file, index) => (
+                {selectedFiles.map((_file, index) => (
                   <div key={index} className="relative group">
-                    <img src={URL.createObjectURL(file)} alt="" className="h-20 w-20 rounded-lg object-cover border border-antique-gold/20" />
+                    <img src={filePreviewUrls[index]} alt="" className="h-20 w-20 rounded-lg object-cover border border-antique-gold/20" />
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(index)}

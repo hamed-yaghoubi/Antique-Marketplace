@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 
 class TokenPayload(BaseModel):
@@ -9,7 +9,7 @@ class TokenPayload(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
 
 
@@ -20,12 +20,20 @@ class LoginRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
-    new_password: str
+    new_password: str = Field(min_length=8)
     confirm_password: str
 
     @model_validator(mode="after")
     def validate_passwords_match(self):
         if self.new_password != self.confirm_password:
             raise ValueError("Passwords do not match")
+
+        # Check password complexity
+        if not any(c.isupper() for c in self.new_password):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in self.new_password):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in self.new_password):
+            raise ValueError("Password must contain at least one digit")
 
         return self

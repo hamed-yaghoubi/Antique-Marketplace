@@ -14,7 +14,12 @@ import { t, formatJalali } from '@/utils/persian'
 
 const passwordSchema = z.object({
   current_password: z.string().min(1, t.validation.required),
-  new_password: z.string().min(6, 'رمز عبور حداقل ۶ کاراکتر باشد'),
+  new_password: z
+    .string()
+    .min(8, 'رمز عبور حداقل ۸ کاراکتر باشد')
+    .regex(/[A-Z]/, 'رمز عبور باید حداقل شامل یک حرف بزرگ باشد')
+    .regex(/[a-z]/, 'رمز عبور باید حداقل شامل یک حرف کوچک باشد')
+    .regex(/[0-9]/, 'رمز عبور باید حداقل شامل یک عدد باشد'),
   confirm_password: z.string().min(1, t.validation.required),
 }).refine((data) => data.new_password === data.confirm_password, {
   message: t.auth.passwordMismatch,

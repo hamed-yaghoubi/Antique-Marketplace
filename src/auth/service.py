@@ -1,11 +1,17 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import jwt
-from fastapi import HTTPException, status
 from src.auth.schemas import ChangePasswordRequest, LoginRequest, TokenResponse
 from src.core import security
 from src.core.config import get_settings
-from src.core.exceptions import InvalidCredentialsError
+from src.core.exceptions import (
+    AppException,
+    BannedAccountError,
+    InvalidCredentialsError,
+    InvalidTokenError,
+    TokenExpiredError,
+    UserAlreadyExistsError,
+)
 from src.users.models import User
 from src.users.role import UserRole
 from src.users import repository
@@ -15,7 +21,6 @@ settings = get_settings()
 
 def register(db: Session, user_create) -> User:
     if repository.get_by_username(db, user_create.username):
-        from src.core.exceptions import UserAlreadyExistsError
         raise UserAlreadyExistsError()
 
     user_count = db.query(func.count()).select_from(User).scalar()
@@ -37,10 +42,7 @@ def login(db: Session, data: LoginRequest) -> TokenResponse:
         raise InvalidCredentialsError()
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been banned"
-        )
+        raise BannedAccountError()
 
     if not security.verify_password(data.password, user.hashed_password):
         raise InvalidCredentialsError()
@@ -56,28 +58,16 @@ def refresh_tokens(db: Session, refresh_token_value: str) -> TokenResponse:
         payload = security.decode_refresh_token(refresh_token_value)
         user_id = int(payload["sub"])
     except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired",
-        )
+        raise TokenExpiredError("Refresh token expired")
     except (jwt.InvalidTokenError, KeyError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        )
+        raise InvalidTokenError("Invalid refresh token")
 
     user = repository.get_by_id(db, user_id)
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+        raise InvalidCredentialsError()
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account has been banned"
-        )
+        raise BannedAccountError()
 
     access_token = security.create_access_token(subject=str(user_id))
     refresh_token = security.create_refresh_token(subject=str(user_id))
@@ -86,7 +76,7 @@ def refresh_tokens(db: Session, refresh_token_value: str) -> TokenResponse:
 
 
 def logout() -> None:
-    pass  # Stateless tokens - client deletes cookie
+    pass 
 
 
 def change_password(db: Session, user: User, data: ChangePasswordRequest) -> None:

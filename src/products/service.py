@@ -1,7 +1,12 @@
-from fastapi import HTTPException, status, UploadFile
+from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from src.core.exceptions import ForbiddenError, ProductNotFoundError
+from src.core.exceptions import (
+    FileTypeNotAllowedError,
+    FileTooLargeError,
+    ForbiddenError,
+    ProductNotFoundError,
+)
 from src.products.models import Product, ProductImage
 from src.products import repository
 from src.products.schemas import ProductCreate, ProductUpdate, ProductFilter, PaginationParams
@@ -66,10 +71,29 @@ def delete_product(db: Session, product_id: int, current_user: User) -> None:
     order_item_count = repository.count_order_items(db, product_id)
 
     if order_item_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete product: it is referenced in {order_item_count} order(s)."
-        )
+        from src.core.exceptions import ProductInUseError
+        raise ProductInUseError(order_item_count)
+
+    repository.delete(db, product)
+
+
+def admin_delete_product(db: Session, product_id: int, current_admin: User) -> None:
+    from src.core.exceptions import ForbiddenError, AuthorizationError
+    from src.users import repository as users_repository
+    from src.users.role import UserRole
+
+    product = get_product(db, product_id)
+
+    if current_admin.role == UserRole.ADMIN:
+        seller = users_repository.get_by_id(db, product.seller_id)
+        if seller and seller.role in (UserRole.ADMIN, UserRole.OWNER):
+            raise AuthorizationError("Admins cannot delete products belonging to admins or owners")
+
+    order_item_count = repository.count_order_items(db, product_id)
+
+    if order_item_count > 0:
+        from src.core.exceptions import ProductInUseError
+        raise ProductInUseError(order_item_count)
 
     repository.delete(db, product)
 
@@ -83,16 +107,15 @@ def upload_product_image(db: Session, product_id: int, file: UploadFile, current
     allowed_exts = settings.allowed_image_extensions_set
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in allowed_exts:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail=f"File type '{ext}' not allowed. Use: {', '.join(allowed_exts)}")
+        raise FileTypeNotAllowedError(ext, list(allowed_exts))
 
     content = file.file.read()
     if len(content) > settings.MAX_IMAGE_SIZE:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {settings.MAX_IMAGE_SIZE // (1024*1024)}MB")
+        raise FileTooLargeError(settings.MAX_IMAGE_SIZE // (1024 * 1024))
 
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
+    # Sanitize filename to prevent path traversal
     filename = f"{uuid.uuid4().hex}{ext}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
 
@@ -116,5 +139,10 @@ def delete_product_image(db: Session, product_id: int, image_id: int, current_us
 
     if image is None or image.product_id != product_id:
         raise ProductNotFoundError()
+
+    # Delete file from disk before deleting from database
+    filepath = os.path.join(".", image.image_url.lstrip("/"))
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
     repository.delete_image(db, image)

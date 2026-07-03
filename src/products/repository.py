@@ -1,5 +1,5 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from src.products.models import Product, ProductImage
 from src.products.schemas import ProductFilter, PaginationParams
 from src.orders.models import OrderItem
@@ -10,7 +10,7 @@ def get_by_id(db: Session, product_id: int) -> Product | None:
     return db.get(Product, product_id)
 
 
-def get_all(db: Session) -> list[Product] | None:
+def get_all(db: Session) -> list[Product]:
     query = select(Product)
     result = db.execute(query).scalars().all()
 
@@ -65,10 +65,16 @@ def get_filtered(db: Session, filters: ProductFilter, pagination: PaginationPara
     else:
         query = query.order_by(sort_column.desc())
 
+    # Eagerly load relationships to avoid N+1 queries
+    query = query.options(
+        selectinload(Product.images),
+        selectinload(Product.seller)
+    )
+
     offset = (pagination.page - 1) * pagination.page_size
     query = query.offset(offset).limit(pagination.page_size)
 
-    products = db.execute(query).scalars().all()
+    products = db.execute(query).scalars().unique().all()
     return list(products), total
 
 
@@ -92,9 +98,16 @@ def delete(db: Session, product: Product) -> None:
     db.commit()
 
 
-def get_by_seller_id(db: Session, seller_id: int) -> list[Product] | None:
-    query = select(Product).where(Product.seller_id == seller_id)
-    result = db.execute(query).scalars().all()
+def get_by_seller_id(db: Session, seller_id: int) -> list[Product]:
+    query = (
+        select(Product)
+        .where(Product.seller_id == seller_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.seller)
+        )
+    )
+    result = db.execute(query).scalars().unique().all()
     return result
 
 def add_image(db: Session, image: ProductImage) -> ProductImage:

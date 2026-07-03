@@ -1,6 +1,11 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-from src.core.exceptions import UserNotFoundError
+from src.core.exceptions import (
+    ForbiddenError,
+    SelfBanError,
+    SelfDemoteError,
+    UserAlreadyAdminError,
+    UserNotFoundError,
+)
 from src.users.models import User
 from src.users import repository
 from src.users.schemas import UserUpdate
@@ -33,23 +38,17 @@ def update_user(db: Session, user: User, data: UserUpdate) -> User:
 def delete_user(db: Session, user: User) -> None:
     repository.delete(db, user)
 
-def get_all_users(db: Session) -> list[User]:
-    return repository.get_all_users(db)
+def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[User]:
+    return repository.get_all_users(db, skip=skip, limit=limit)
 
 def ban_user(db: Session, user_id: int, current_user: User) -> User:
     target = get_user(db, user_id)
 
     if target.id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot ban yourself"
-        )
+        raise SelfBanError()
 
     if current_user.role == UserRole.ADMIN and target.role in (UserRole.ADMIN, UserRole.OWNER):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admins cannot ban other admins or owners"
-        )
+        raise ForbiddenError()
 
     target.is_active = False
     return repository.update(db, target)
@@ -58,10 +57,7 @@ def unban_user(db: Session, user_id: int, current_user: User) -> User:
     target = get_user(db, user_id)
 
     if current_user.role == UserRole.ADMIN and target.role in (UserRole.ADMIN, UserRole.OWNER):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admins cannot unban other admins or owners"
-        )
+        raise ForbiddenError()
 
     target.is_active = True
     return repository.update(db, target)
@@ -70,10 +66,20 @@ def promote_to_admin(db: Session, user_id: int, current_user: User) -> User:
     target = get_user(db, user_id)
 
     if target.role in (UserRole.ADMIN, UserRole.OWNER):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already an admin or owner"
-        )
+        raise UserAlreadyAdminError()
 
     target.role = UserRole.ADMIN
+    return repository.update(db, target)
+
+
+def demote_to_user(db: Session, user_id: int, current_user: User) -> User:
+    target = get_user(db, user_id)
+
+    if target.id == current_user.id:
+        raise SelfDemoteError()
+
+    if target.role != UserRole.ADMIN:
+        raise ForbiddenError("Only administrators can be demoted")
+
+    target.role = UserRole.USER
     return repository.update(db, target)

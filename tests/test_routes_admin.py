@@ -63,3 +63,52 @@ class TestAdminUnbanUser:
         other_admin = user_factory(username="unbanadmin", role="admin", is_active=False)
         response = client.patch(f"/admin/users/{other_admin.id}/unban", headers=admin_headers)
         assert response.status_code == 403
+
+
+class TestOwnerPromote:
+    def test_promote_user(self, client, owner_headers, user_factory):
+        target = user_factory(username="topromote")
+        response = client.post(f"/owner/promote/{target.id}", headers=owner_headers)
+        assert response.status_code == 200
+        assert response.json()["role"] == "admin"
+
+    def test_promote_already_admin(self, client, owner_headers, user_factory):
+        target = user_factory(username="alreadyadmin", role="admin")
+        response = client.post(f"/owner/promote/{target.id}", headers=owner_headers)
+        assert response.status_code == 400
+
+    def test_promote_forbidden_for_admin(self, client, admin_headers, user_factory):
+        target = user_factory(username="notallowed")
+        response = client.post(f"/owner/promote/{target.id}", headers=admin_headers)
+        assert response.status_code == 403
+
+
+class TestOwnerDemote:
+    def test_demote_admin(self, client, owner_headers, user_factory):
+        target = user_factory(username="todemote", role="admin")
+        response = client.post(f"/owner/demote/{target.id}", headers=owner_headers)
+        assert response.status_code == 200
+        assert response.json()["role"] == "user"
+
+    def test_demote_self(self, client, owner_headers, owner_user):
+        response = client.post(f"/owner/demote/{owner_user.id}", headers=owner_headers)
+        assert response.status_code == 400
+
+    def test_demote_non_admin(self, client, owner_headers, user_factory):
+        target = user_factory(username="regularuser")
+        response = client.post(f"/owner/demote/{target.id}", headers=owner_headers)
+        assert response.status_code == 403
+
+    def test_demote_forbidden_for_admin(self, client, admin_headers, user_factory):
+        target = user_factory(username="someadmin", role="admin")
+        response = client.post(f"/owner/demote/{target.id}", headers=admin_headers)
+        assert response.status_code == 403
+
+    def test_demote_unauthenticated(self, client, user_factory):
+        target = user_factory(username="unauthadmin", role="admin")
+        response = client.post(f"/owner/demote/{target.id}")
+        assert response.status_code == 401
+
+    def test_demote_nonexistent_user(self, client, owner_headers):
+        response = client.post("/owner/demote/99999", headers=owner_headers)
+        assert response.status_code == 404

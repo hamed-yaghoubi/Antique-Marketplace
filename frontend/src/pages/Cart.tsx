@@ -126,7 +126,8 @@ export function Cart() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateMutation.mutate({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })}
-                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 transition-colors"
+                disabled={item.quantity <= 1}
+                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -135,7 +136,8 @@ export function Cart() {
               </span>
               <button
                 onClick={() => updateMutation.mutate({ itemId: item.id, quantity: item.quantity + 1 })}
-                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 transition-colors"
+                disabled={item.quantity >= item.product.quantity}
+                className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="h-4 w-4" />
               </button>

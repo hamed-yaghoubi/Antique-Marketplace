@@ -160,14 +160,16 @@ export function Products() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {data?.items.map((product) => (
+          {data?.items.map((product) => {
+            const isOutOfStock = product.quantity <= 0
+            return (
             <div key={product.id} className="card group overflow-hidden p-0 transition-all hover:shadow-vintage-lg">
               <div className="relative aspect-square overflow-hidden bg-antique-gold/5">
                 {product.main_image ? (
                   <img
                     src={product.main_image.image_url}
                     alt={product.title}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    className={`h-full w-full object-cover transition-transform group-hover:scale-105 ${isOutOfStock ? 'grayscale' : ''}`}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
@@ -177,6 +179,11 @@ export function Products() {
                 <div className="absolute left-3 top-3">
                   <Badge variant="info">{categories.find(c => c.value === product.category)?.label ?? product.category}</Badge>
                 </div>
+                {isOutOfStock && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-antique-ink/30">
+                    <Badge variant="danger">{t.products.outOfStockBadge}</Badge>
+                  </div>
+                )}
               </div>
               <div className="p-4">
                 <Link to={`/products/${product.id}`}>
@@ -196,6 +203,7 @@ export function Products() {
                       size="sm"
                       onClick={() => addToCartMutation.mutate(product.id)}
                       isLoading={addToCartMutation.isPending}
+                      disabled={isOutOfStock}
                     >
                       <ShoppingCart className="h-4 w-4" />
                     </Button>
@@ -203,7 +211,8 @@ export function Products() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

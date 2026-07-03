@@ -1,6 +1,5 @@
 import math
-from fastapi import APIRouter, HTTPException, Query, status, UploadFile, File
-from src.core.exceptions import ForbiddenError, ProductNotFoundError
+from fastapi import APIRouter, Query, status, UploadFile, File
 from src.dependencies.auth import CurrentUser
 from src.dependencies.db import DbSession
 from src.products.schemas import (
@@ -53,29 +52,18 @@ def read_my_products(db: DbSession, current_user: CurrentUser):
 
 @router.post("/{product_id}/images", response_model=ProductImageResponse, status_code=status.HTTP_201_CREATED)
 def upload_product_image(product_id: int, db: DbSession, current_user: CurrentUser, file: UploadFile = File()):
-    try:
-        return service.upload_product_image(db, product_id, file, current_user)
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+    return service.upload_product_image(db, product_id, file, current_user)
+
 
 @router.delete("/{product_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product_image(product_id: int, image_id: int, db: DbSession, current_user: CurrentUser):
-    try:
-        service.delete_product_image(db, product_id, image_id, current_user)
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-    except ForbiddenError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+    service.delete_product_image(db, product_id, image_id, current_user)
+
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def read_product(product_id: int, db: DbSession):
-    try:
-        return service.get_product(db, product_id)
+    return service.get_product(db, product_id)
 
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_new_product(data: ProductCreate, db: DbSession, current_user: CurrentUser):
@@ -84,22 +72,9 @@ def create_new_product(data: ProductCreate, db: DbSession, current_user: Current
 
 @router.patch("/{product_id}", response_model=ProductResponse)
 def update_product(product_id: int, data: ProductUpdate, db: DbSession, current_user: CurrentUser):
-    try:
-        return service.update_product(db, product_id, data, current_user)
+    return service.update_product(db, product_id, data, current_user)
 
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-
-    except ForbiddenError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: int, db: DbSession, current_user: CurrentUser):
-    try:
-        service.delete_product(db, product_id, current_user)
-
-    except ProductNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.message)
-
-    except ForbiddenError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e.message)
+    service.delete_product(db, product_id, current_user)

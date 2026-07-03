@@ -28,6 +28,6 @@ def delete(db: Session, user: User) -> None:
     db.delete(user)
     db.commit()
 
-def get_all_users(db: Session) -> list[User]:
-    query = select(User)
+def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[User]:
+    query = select(User).offset(skip).limit(limit)
     return list(db.execute(query).scalars().all())

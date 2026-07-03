@@ -19,7 +19,7 @@ def register_user(user_create: UserCreate, db: DbSession):
 def login_user(data: LoginRequest, db: DbSession, response: Response):
     tokens = service.login(db, data)
     set_refresh_cookie(response, tokens.refresh_token)
-    return tokens
+    return TokenResponse(access_token=tokens.access_token, token_type=tokens.token_type)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -34,7 +34,7 @@ def refresh_token(
     try:
         tokens = service.refresh_tokens(db, refresh_token_value)
         set_refresh_cookie(response, tokens.refresh_token)
-        return tokens
+        return TokenResponse(access_token=tokens.access_token, token_type=tokens.token_type)
     except AppException:
         delete_refresh_cookie(response)
         raise

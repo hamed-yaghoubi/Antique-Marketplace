@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Shield, ShieldOff, UserCheck, UserMinus, Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { adminApi } from '@/api/admin.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
@@ -24,16 +25,6 @@ export function AdminUsers() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: adminApi.getUsers,
-  })
-
-  const roleMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: number; role: 'user' | 'admin' }) =>
-      adminApi.updateUserRole(userId, role),
-    onSuccess: () => {
-      toast.success(t.admin.userRoleUpdated)
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
-    },
-    onError: () => toast.error(t.admin.roleUpdateFailed),
   })
 
   const banMutation = useMutation({
@@ -67,8 +58,7 @@ export function AdminUsers() {
   })
 
   const demoteMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: number; role: 'user' }) =>
-      adminApi.updateUserRole(userId, role),
+    mutationFn: (userId: number) => adminApi.demoteUser(userId),
     onSuccess: () => {
       toast.success(t.admin.userDemoted)
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
@@ -88,9 +78,7 @@ export function AdminUsers() {
     if (!search.trim()) return users
     const q = search.trim().toLowerCase()
     return users.filter(
-      (user) =>
-        user.username.toLowerCase().includes(q) ||
-        user.role.toLowerCase().includes(q)
+      (user) => user.username.toLowerCase().includes(q)
     )
   }, [users, search])
 
@@ -144,7 +132,9 @@ export function AdminUsers() {
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="transition-colors hover:bg-antique-gold/5">
                   <td className="px-6 py-4">
-                    <span className="font-semibold text-antique-wood">{user.username}</span>
+                    <Link to={`/admin/users/${user.id}`} className="font-semibold text-antique-wood hover:text-antique-gold transition-colors">
+                      {user.username}
+                    </Link>
                   </td>
                   <td className="px-6 py-4">
                     {getRoleBadge(user.role)}
@@ -169,7 +159,7 @@ export function AdminUsers() {
                             <UserCheck className="h-4 w-4" />
                           </button>
                         )}
-                        {isOwner && user.role === 'admin' && (
+                        {isOwner && user.role === 'admin' && currentUser?.id !== user.id && (
                           <button
                             onClick={() => setDemoteTarget(user)}
                             className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-orange-100 hover:text-orange-600 transition-colors"
@@ -252,7 +242,7 @@ export function AdminUsers() {
         <p className="text-sm text-antique-sepia-light">{t.admin.confirmDemote}</p>
         <div className="flex justify-start gap-3 mt-6">
           <Button variant="secondary" onClick={() => setDemoteTarget(null)}>{t.admin.cancel}</Button>
-          <Button variant="danger" isLoading={demoteMutation.isPending} onClick={() => demoteTarget && demoteMutation.mutate({ userId: demoteTarget.id, role: 'user' })}>
+          <Button variant="danger" isLoading={demoteMutation.isPending} onClick={() => demoteTarget && demoteMutation.mutate(demoteTarget.id)}>
             {t.admin.demote}
           </Button>
         </div>

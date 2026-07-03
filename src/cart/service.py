@@ -3,7 +3,13 @@ from sqlalchemy.orm import Session
 from src.cart.models import CartItem
 from src.cart import repository
 from src.cart.schemas import CartItemCreate, CartItemUpdate, CartResponse
-from src.core.exceptions import CartItemNotFoundError, ForbiddenError, InsufficientStockError, ProductNotFoundError
+from src.core.exceptions import (
+    CartItemNotFoundError,
+    ForbiddenError,
+    InsufficientStockError,
+    ProductNotFoundError,
+    SelfPurchaseError,
+)
 from src.products import repository as products_repository
 from src.users.models import User
 
@@ -29,6 +35,12 @@ def add_item(db: Session, data: CartItemCreate, current_user: User) -> CartItem:
 
     if product is None:
         raise ProductNotFoundError()
+
+    if not product.is_active:
+        raise ProductNotFoundError()
+
+    if product.seller_id == current_user.id:
+        raise SelfPurchaseError()
 
     if data.quantity > product.quantity:
         raise InsufficientStockError()
@@ -66,6 +78,9 @@ def update_item_quantity(db: Session, item_id: int, data: CartItemUpdate, curren
         raise ForbiddenError()
 
     product = cart_item.product
+
+    if not product.is_active:
+        raise ProductNotFoundError()
 
     if data.quantity > product.quantity:
         raise InsufficientStockError()

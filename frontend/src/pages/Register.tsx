@@ -12,7 +12,12 @@ import { t } from '@/utils/persian'
 
 const registerSchema = z.object({
   username: z.string().min(3, 'نام کاربری حداقل ۳ کاراکتر باشد'),
-  password: z.string().min(6, 'رمز عبور حداقل ۶ کاراکتر باشد'),
+  password: z
+    .string()
+    .min(8, 'رمز عبور حداقل ۸ کاراکتر باشد')
+    .regex(/[A-Z]/, 'رمز عبور باید حداقل شامل یک حرف بزرگ باشد')
+    .regex(/[a-z]/, 'رمز عبور باید حداقل شامل یک حرف کوچک باشد')
+    .regex(/[0-9]/, 'رمز عبور باید حداقل شامل یک عدد باشد'),
   confirm_password: z.string().min(1, t.validation.required),
 }).refine((data) => data.password === data.confirm_password, {
   message: t.auth.passwordMismatch,

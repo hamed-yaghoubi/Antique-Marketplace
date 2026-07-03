@@ -8,6 +8,10 @@ settings = get_settings()
 
 password_hash = PasswordHash.recommended()
 
+# Use different keys for access and refresh tokens for better security
+_ACCESS_TOKEN_KEY = settings.SECRET_KEY + "_access"
+_REFRESH_TOKEN_KEY = settings.SECRET_KEY + "_refresh"
+
 
 def hash_password(password: str) -> str:
     return password_hash.hash(password)
@@ -33,7 +37,7 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
 
     return jwt.encode(
         payload,
-        settings.SECRET_KEY,
+        _ACCESS_TOKEN_KEY,
         algorithm=settings.ALGORITHM
     )
 
@@ -42,7 +46,7 @@ def decode_access_token(token: str) -> dict[str, Any]:
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
+            _ACCESS_TOKEN_KEY,
             algorithms=[settings.ALGORITHM]
         )
     except jwt.ExpiredSignatureError:
@@ -67,7 +71,7 @@ def create_refresh_token(subject: str) -> str:
 
     return jwt.encode(
         payload,
-        settings.SECRET_KEY,
+        _REFRESH_TOKEN_KEY,
         algorithm=settings.ALGORITHM
     )
 
@@ -76,7 +80,7 @@ def decode_refresh_token(token: str) -> dict[str, Any]:
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
+            _REFRESH_TOKEN_KEY,
             algorithms=[settings.ALGORITHM]
         )
     except jwt.ExpiredSignatureError:

@@ -18,6 +18,9 @@ export function Header() {
             <Link to="/profile" className="text-sm font-semibold text-antique-wood hover:text-antique-gold transition-colors">
               {user?.username}
             </Link>
+            {user?.role === 'owner' && (
+              <Badge variant="warning">مالک</Badge>
+            )}
             {user?.role === 'admin' && (
               <Badge variant="info">مدیر</Badge>
             )}

@@ -27,14 +27,14 @@ export function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   const { data: product, isLoading, error } = useQuery({
-    queryKey: ['product', id],
+    queryKey: ['product', Number(id)],
     queryFn: () => productsApi.getProduct(Number(id)),
     enabled: !!id,
   })
 
   useEffect(() => {
     if (product?.images?.length && !selectedImage) {
-      setSelectedImage(product.images[0].image_url)
+      setSelectedImage(product.images[0]?.image_url ?? null)
     }
   }, [product, selectedImage])
 
@@ -102,7 +102,7 @@ export function ProductDetail() {
               <img
                 src={mainImage}
                 alt={product.title}
-                className="aspect-square w-full object-cover"
+                className={`aspect-square w-full object-cover ${product.quantity <= 0 ? 'grayscale' : ''}`}
               />
             ) : (
               <div className="flex aspect-square w-full items-center justify-center bg-antique-gold/5">

@@ -55,6 +55,15 @@ class TestCartAddItem:
         })
         assert response.status_code == 401
 
+    def test_add_item_self_purchase(self, client, product_factory, owner_user, owner_headers):
+        product = product_factory(title="Own", seller_id=owner_user.id)
+        response = client.post("/cart/items", json={
+            "product_id": product.id,
+            "quantity": 1,
+        }, headers=owner_headers)
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "SELF_PURCHASE_NOT_ALLOWED"
+
 
 class TestCartUpdateItem:
     def test_update_quantity(self, client, auth_headers, sample_product, cart_item_factory, regular_user):

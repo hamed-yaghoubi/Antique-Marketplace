@@ -13,8 +13,8 @@ class ProductImageResponse(BaseModel):
 class ProductBase(BaseModel):
     title: str
     description: str
-    price: Decimal
-    quantity: int
+    price: Decimal = Field(gt=0)
+    quantity: int = Field(ge=0)
     category: ProductCategory
 
 
@@ -36,7 +36,7 @@ class ProductUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     price: Decimal | None = None
-    quantity: int | None = None
+    quantity: int | None = Field(default=None, ge=0)
     category: ProductCategory | None = None
     is_active: bool | None = None
 

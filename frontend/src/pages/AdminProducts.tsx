@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -7,7 +7,6 @@ import toast from 'react-hot-toast'
 import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, X, Image } from 'lucide-react'
 import { productsApi } from '@/api/products.api'
 import { adminApi } from '@/api/admin.api'
-import { useAuth } from '@/contexts/AuthContext'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -39,7 +38,6 @@ type ProductForm = z.infer<typeof productSchema>
 export function AdminProducts() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { isOwner } = useAuth()
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, page_size: 10, sort_by: 'created_at', sort_order: 'desc' })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
@@ -47,6 +45,17 @@ export function AdminProducts() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<ProductImage[]>([])
   const [isUploading, setIsUploading] = useState(false)
+
+  // Create object URLs for selected files and revoke them on cleanup
+  const filePreviewUrls = useMemo(() => {
+    return selectedFiles.map((file) => URL.createObjectURL(file))
+  }, [selectedFiles])
+
+  useEffect(() => {
+    return () => {
+      filePreviewUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [filePreviewUrls])
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', filters],
@@ -116,22 +125,8 @@ export function AdminProducts() {
     onError: () => toast.error(t.admin.updateFailed),
   })
 
-  const deleteProduct = async (id: number) => {
-    if (isOwner) {
-      try {
-        const api = (await import('@/api/axios')).default
-        await api.delete(`/owner/products/${id}`)
-        return
-      } catch {
-        await adminApi.deleteProduct(id)
-      }
-    } else {
-      await adminApi.deleteProduct(id)
-    }
-  }
-
   const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
+    mutationFn: (id: number) => adminApi.deleteProduct(id),
     onSuccess: () => {
       toast.success(t.admin.productDeleted)
       queryClient.invalidateQueries({ queryKey: ['admin-products'] })
@@ -378,9 +373,9 @@ export function AdminProducts() {
             )}
             {selectedFiles.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {selectedFiles.map((file, index) => (
+                {selectedFiles.map((_file, index) => (
                   <div key={index} className="relative group">
-                    <img src={URL.createObjectURL(file)} alt="" className="h-20 w-20 rounded-lg object-cover border border-antique-gold/20" />
+                    <img src={filePreviewUrls[index]} alt="" className="h-20 w-20 rounded-lg object-cover border border-antique-gold/20" />
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(index)}

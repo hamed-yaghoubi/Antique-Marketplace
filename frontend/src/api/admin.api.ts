@@ -2,8 +2,9 @@ import api from './axios'
 import type { User } from '@/types/auth'
 
 export const adminApi = {
-  deleteProduct: async (id: number): Promise<void> => {
-    await api.delete(`/admin/products/${id}`)
+  getUser: async (userId: number): Promise<User> => {
+    const response = await api.get<User>(`/admin/users/${userId}`)
+    return response.data
   },
 
   getUsers: async (): Promise<User[]> => {
@@ -11,9 +12,8 @@ export const adminApi = {
     return response.data
   },
 
-  updateUserRole: async (userId: number, role: 'user' | 'admin'): Promise<User> => {
-    const response = await api.patch<User>(`/admin/users/${userId}/role`, { role })
-    return response.data
+  deleteProduct: async (id: number): Promise<void> => {
+    await api.delete(`/admin/products/${id}`)
   },
 
   banUser: async (userId: number): Promise<User> => {
@@ -28,6 +28,11 @@ export const adminApi = {
 
   promoteUser: async (userId: number): Promise<User> => {
     const response = await api.post<User>(`/owner/promote/${userId}`)
+    return response.data
+  },
+
+  demoteUser: async (userId: number): Promise<User> => {
+    const response = await api.post<User>(`/owner/demote/${userId}`)
     return response.data
   },
 }
