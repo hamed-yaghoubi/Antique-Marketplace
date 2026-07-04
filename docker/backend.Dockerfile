@@ -2,27 +2,17 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
-# Install uv
 RUN pip install --no-cache-dir uv
 
-# Copy dependency files first for caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
 RUN uv sync --no-dev
 
-# Copy application code
 COPY src/ ./src/
-COPY migrations/ ./migrations/
+COPY static/ ./static/
 COPY alembic.ini ./
-
-# Create static directory
-RUN mkdir -p static/products
-
-# Copy entrypoint script
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY migrations/ ./migrations/
 
 EXPOSE 8000
 
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
