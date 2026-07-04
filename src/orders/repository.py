@@ -21,7 +21,7 @@ def get_by_id_for_seller(db: Session, order_id: int, seller_id: int) -> Order | 
         select(Order)
         .where(Order.id == order_id)
         .options(
-            selectinload(Order.items).selectinload(OrderItem.product),
+            selectinload(Order.items),
             selectinload(Order.buyer),
         )
     )

@@ -65,6 +65,11 @@ export function AdminProducts() {
     queryFn: () => productsApi.getProducts(filters),
   })
 
+  const { data: users } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.getUsers(),
+  })
+
   const {
     register,
     handleSubmit,
@@ -267,6 +272,15 @@ export function AdminProducts() {
           onChange={(e) => updateFilter('is_active', e.target.value ? e.target.value === 'true' : undefined)}
           className="w-auto"
         />
+        {users && (
+          <Select
+            options={users.map((u) => ({ value: String(u.id), label: u.username }))}
+            placeholder={t.products.seller}
+            value={filters.seller_id?.toString() || ''}
+            onChange={(e) => updateFilter('seller_id', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-auto"
+          />
+        )}
       </div>
 
       {isLoading ? (

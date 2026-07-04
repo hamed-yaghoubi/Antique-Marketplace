@@ -109,7 +109,7 @@ def get_orders(db: Session, current_user: User) -> list[Order]:
 
 
 def get_order(db: Session, order_id: int, current_user: User, view: str = "buyer") -> Order:
-    if current_user.role in (UserRole.ADMIN, UserRole.OWNER) and view == "seller":
+    if view == "seller":
         order = repository.get_by_id_for_seller(db, order_id, current_user.id)
     else:
         order = repository.get_by_id(db, order_id)
@@ -118,6 +118,10 @@ def get_order(db: Session, order_id: int, current_user: User, view: str = "buyer
         raise OrderNotFoundError()
 
     if current_user.role in (UserRole.ADMIN, UserRole.OWNER):
+        return order
+
+    # Sellers can view orders that contain their products
+    if view == "seller" and repository.order_contains_seller_product(db, order_id, current_user.id):
         return order
 
     if order.buyer_id != current_user.id:

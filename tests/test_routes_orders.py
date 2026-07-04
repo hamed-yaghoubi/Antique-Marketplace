@@ -140,6 +140,22 @@ class TestOrderCancel:
         response = client.get(f"/orders/{order.id}", headers=owner_headers)
         assert response.status_code == 200
 
+    def test_regular_user_seller_can_view_order_with_view_param(self, client, product_factory, regular_user, auth_headers, other_user, order_factory):
+        """A regular USER who has products can view orders containing their products via ?view=seller."""
+        product = product_factory(title="MyProd", seller_id=regular_user.id, quantity=5)
+        order = order_factory(buyer_id=other_user.id, total_price=Decimal("50"), items=[{
+            "product_id": product.id,
+            "seller_id": regular_user.id,
+            "product_title": "MyProd",
+            "unit_price": Decimal("50"),
+            "quantity": 1,
+        }])
+        response = client.get(f"/orders/{order.id}?view=seller", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["product_title"] == "MyProd"
+
     def test_customer_cannot_confirm_order_via_confirm_endpoint(self, client, auth_headers, regular_user, order_factory):
         """Customers cannot advance order status — only sellers/admins can."""
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"))

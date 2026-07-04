@@ -1,27 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
-import { Search, ChevronLeft, ChevronRight, ListOrdered, Eye, RefreshCw } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Search, ChevronLeft, ChevronRight, ListOrdered, Eye } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
-import { queryKeys, invalidateOrders, invalidateDashboards } from '@/lib/queryKeys'
+import { queryKeys } from '@/lib/queryKeys'
 import type { OrderStatus, OrderFilters } from '@/types/orders'
-import { getValidTransitions } from '@/types/orders'
-
-const statusOptions: Array<{ value: OrderStatus; label: string }> = [
-  { value: 'pending', label: t.orders.pending },
-  { value: 'confirmed', label: t.orders.confirmed },
-  { value: 'preparing', label: t.orders.preparing },
-  { value: 'shipped', label: t.orders.shipped },
-  { value: 'delivered', label: t.orders.delivered },
-  { value: 'cancelled', label: t.orders.cancelled },
-]
 
 const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
   pending: { label: t.orders.pending, variant: 'warning' },
@@ -32,46 +20,25 @@ const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'succ
   cancelled: { label: t.orders.cancelled, variant: 'danger' },
 }
 
+const statusOptions: Array<{ value: OrderStatus; label: string }> = [
+  { value: 'pending', label: t.orders.pending },
+  { value: 'confirmed', label: t.orders.confirmed },
+  { value: 'preparing', label: t.orders.preparing },
+  { value: 'shipped', label: t.orders.shipped },
+  { value: 'delivered', label: t.orders.delivered },
+  { value: 'cancelled', label: t.orders.cancelled },
+]
+
 export function SellerOrders() {
-  const queryClient = useQueryClient()
   const [filters, setFilters] = useState<OrderFilters>({ page: 1, page_size: 10 })
-  const [statusModalOrderId, setStatusModalOrderId] = useState<number | null>(null)
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending')
-  const [currentOrderStatus, setCurrentOrderStatus] = useState<OrderStatus>('pending')
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.orders.sellerList(filters),
     queryFn: () => ordersApi.getOrders({ ...filters, view: 'seller' }),
   })
 
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: OrderStatus }) =>
-      ordersApi.updateOrderStatus(id, status),
-    onSuccess: () => {
-      toast.success(t.orders.management.statusUpdated)
-      invalidateOrders(queryClient)
-      invalidateDashboards(queryClient)
-      setStatusModalOrderId(null)
-    },
-    onError: () => toast.error(t.orders.management.statusUpdateFailed),
-  })
-
-  const validStatuses = getValidTransitions(currentOrderStatus, true)
-
   const updateFilter = (key: keyof OrderFilters, value: string | number | undefined) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }))
-  }
-
-  const openStatusModal = (orderId: number, currentStatus: OrderStatus) => {
-    setStatusModalOrderId(orderId)
-    setCurrentOrderStatus(currentStatus)
-    setSelectedStatus(currentStatus)
-  }
-
-  const confirmStatusUpdate = () => {
-    if (statusModalOrderId) {
-      statusMutation.mutate({ id: statusModalOrderId, status: selectedStatus })
-    }
   }
 
   return (
@@ -141,20 +108,12 @@ export function SellerOrders() {
                     <td className="px-6 py-4 text-sm font-bold text-antique-wood">{formatPrice(order.total_price)}</td>
                     <td className="px-6 py-4 text-sm text-antique-sepia-light">{formatJalali(order.created_at)}</td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/orders/${order.id}?from=seller`}
-                          className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                        <button
-                          onClick={() => openStatusModal(order.id, order.status)}
-                          className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <Link
+                        to={`/orders/${order.id}?view=seller`}
+                        className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
                     </td>
                   </tr>
                 )
@@ -187,30 +146,6 @@ export function SellerOrders() {
           </div>
         </div>
       )}
-
-      <Modal isOpen={statusModalOrderId !== null} onClose={() => setStatusModalOrderId(null)} title={t.orders.management.updateStatus} size="sm">
-        <p className="mb-4 text-sm text-antique-sepia-light">{t.orders.management.confirmStatus}</p>
-        <select
-          className="input-field w-full"
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
-        >
-          <option value={currentOrderStatus}>{statusMap[currentOrderStatus].label}</option>
-          {statusOptions
-            .filter((opt) => validStatuses.includes(opt.value))
-            .map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-        </select>
-        <div className="flex justify-start gap-3 mt-6">
-          <Button variant="secondary" onClick={() => setStatusModalOrderId(null)}>{t.admin.cancel}</Button>
-          <Button isLoading={statusMutation.isPending} onClick={confirmStatusUpdate}>
-            {t.admin.update}
-          </Button>
-        </div>
-      </Modal>
     </div>
   )
 }

@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Search, ChevronLeft, ChevronRight, ListOrdered, Eye, RefreshCw } from 'lucide-react'
 import { ordersApi } from '@/api/orders.api'
+import { adminApi } from '@/api/admin.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
 import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 import { t, toPersianNumbers, formatPrice, formatJalali } from '@/utils/persian'
@@ -42,6 +44,11 @@ export function AdminOrders() {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.orders.adminList(filters),
     queryFn: () => ordersApi.getOrders({ ...filters, view: 'all' }),
+  })
+
+  const { data: users } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: () => adminApi.getUsers(),
   })
 
   const statusMutation = useMutation({
@@ -109,6 +116,15 @@ export function AdminOrders() {
             </option>
           ))}
         </select>
+        {users && (
+          <Select
+            options={users.map((u) => ({ value: String(u.id), label: u.username }))}
+            placeholder={t.orders.seller}
+            value={filters.seller_id?.toString() || ''}
+            onChange={(e) => updateFilter('seller_id', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-auto"
+          />
+        )}
       </div>
 
       {isLoading ? (
