@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM python:3.14-slim
 
 WORKDIR /app
@@ -11,7 +10,10 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --no-dev
 
 COPY src/ ./src/
 COPY alembic.ini ./
+COPY docker/entrypoint.sh ./
+
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["./entrypoint.sh"]
