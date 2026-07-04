@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { User } from '@/types/auth'
 import { authApi } from '@/api/auth.api'
 
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
 
   const refreshUser = useCallback(async () => {
     try {
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       localStorage.removeItem('access_token')
       setUser(null)
+      queryClient.clear()
     }
   }
 
