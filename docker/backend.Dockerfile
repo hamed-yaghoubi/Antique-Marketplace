@@ -1,17 +1,16 @@
+# syntax=docker/dockerfile:1
 FROM python:3.14-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir uv
+RUN --mount=type=cache,target=/root/.cache/pip pip install uv
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --no-dev
 
 COPY src/ ./src/
-COPY static/ ./static/
 COPY alembic.ini ./
-COPY migrations/ ./migrations/
 
 EXPOSE 8000
 
