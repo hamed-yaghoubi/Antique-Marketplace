@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.products.category import ProductCategory
 from datetime import datetime
 
@@ -11,11 +11,27 @@ class ProductImageResponse(BaseModel):
 
 
 class ProductBase(BaseModel):
-    title: str
-    description: str
-    price: Decimal = Field(gt=0)
-    quantity: int = Field(ge=0)
+    title: str = Field(min_length=1, max_length=255)
+    description: str = Field(min_length=1, max_length=10000)
+    price: Decimal = Field(gt=0, le=99999999.99)
+    quantity: int = Field(ge=0, le=999999)
     category: ProductCategory
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Title cannot be empty")
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Description cannot be empty")
+        return v
 
 
 class ProductCreate(ProductBase):
@@ -33,12 +49,32 @@ class ProductResponse(ProductBase):
 
 
 class ProductUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-    price: Decimal | None = Field(default=None, gt=0)
-    quantity: int | None = Field(default=None, ge=0)
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=10000)
+    price: Decimal | None = Field(default=None, gt=0, le=99999999.99)
+    quantity: int | None = Field(default=None, ge=0, le=999999)
     category: ProductCategory | None = None
     is_active: bool | None = None
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Title cannot be empty")
+        return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Description cannot be empty")
+        return v
 
 
 class ProductCard(BaseModel):
@@ -58,19 +94,26 @@ class ProductCard(BaseModel):
     @classmethod
     def extract_main_image(cls, data):
         if isinstance(data, dict):
-            images = data.get("images", [])
+            images = data.get("images") or []
             data["main_image"] = images[0] if images else None
             seller_user = data.get("seller")
-            if seller_user is not None:
-                data["seller"] = getattr(seller_user, "username", None) or data.get("seller")
+            if isinstance(seller_user, str):
+                # Already a username string — keep as-is.
+                pass
+            elif seller_user is not None:
+                # ORM object or similar — extract its username, defaulting to
+                # None when the attribute is missing instead of overwriting a
+                # valid value with None.
+                data["seller"] = getattr(seller_user, "username", None)
             return data
 
+        # ORM-object path
         images = getattr(data, "images", None) or []
         seller_user = getattr(data, "seller", None)
         result = {}
         for key in ["id", "title", "price", "category", "is_active", "quantity", "seller_id"]:
             result[key] = getattr(data, key)
-        result["seller"] = getattr(seller_user, "username", None) if seller_user else None
+        result["seller"] = getattr(seller_user, "username", None) if seller_user is not None else None
         result["main_image"] = images[0] if images else None
         return result
 

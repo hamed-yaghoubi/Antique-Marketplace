@@ -1,5 +1,5 @@
 from decimal import Decimal
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 from src.orders.models import Order, OrderItem
 from src.orders.schemas import OrderFilter, PaginationParams
@@ -14,6 +14,22 @@ def get_by_id(db: Session, order_id: int) -> Order | None:
         .options(selectinload(Order.items), selectinload(Order.buyer))
     )
     return db.execute(query).scalar_one_or_none()
+
+
+def get_by_id_for_seller(db: Session, order_id: int, seller_id: int) -> Order | None:
+    query = (
+        select(Order)
+        .where(Order.id == order_id)
+        .options(
+            selectinload(Order.items).selectinload(OrderItem.product),
+            selectinload(Order.buyer),
+        )
+    )
+    order = db.execute(query).scalar_one_or_none()
+    if order is None:
+        return None
+    order.items = [item for item in order.items if item.seller_id == seller_id]
+    return order
 
 
 def get_by_buyer_id(db: Session, buyer_id: int) -> list[Order]:
@@ -71,10 +87,15 @@ def get_filtered(
 
     if filters.search:
         search_term = f"%{filters.search}%"
-        query = query.join(Order.buyer, isouter=True).where(
-            (Order.id == filters.search.strip())
-            | (User.username.ilike(search_term))
-        )
+        query = query.join(Order.buyer, isouter=True)
+        term = filters.search.strip()
+        conditions = [User.username.ilike(search_term)]
+        # Only compare against the integer Order.id when the search term is
+        # numeric. Comparing an integer column to a non-numeric string raises
+        # a DataError on PostgreSQL and crashes the request with a 500.
+        if term.isdigit():
+            conditions.append(Order.id == int(term))
+        query = query.where(or_(*conditions))
 
     if filters.status is not None:
         query = query.where(Order.status == filters.status)

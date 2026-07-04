@@ -128,7 +128,7 @@ class TestOrderCancel:
         assert response.status_code == 200
         assert response.json()["status"] == "confirmed"
 
-    def test_seller_cannot_view_unrelated_orders(self, client, product_factory, owner_user, owner_headers, regular_user, other_user, order_factory):
+    def test_owner_can_view_any_order(self, client, product_factory, owner_user, owner_headers, regular_user, other_user, order_factory):
         other_product = product_factory(title="OtherProduct", seller_id=other_user.id, quantity=5)
         order = order_factory(buyer_id=regular_user.id, total_price=Decimal("50"), items=[{
             "product_id": other_product.id,
@@ -138,7 +138,7 @@ class TestOrderCancel:
             "quantity": 1,
         }])
         response = client.get(f"/orders/{order.id}", headers=owner_headers)
-        assert response.status_code == 403
+        assert response.status_code == 200
 
     def test_customer_cannot_confirm_order_via_confirm_endpoint(self, client, auth_headers, regular_user, order_factory):
         """Customers cannot advance order status — only sellers/admins can."""

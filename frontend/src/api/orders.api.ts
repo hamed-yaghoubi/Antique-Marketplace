@@ -19,13 +19,19 @@ export const ordersApi = {
       if (filters.sort_by) params.append('sort_by', filters.sort_by)
       if (filters.sort_order) params.append('sort_order', filters.sort_order)
       if (filters.view) params.append('view', filters.view)
+      if (filters.seller_id) params.append('seller_id', String(filters.seller_id))
+      if (filters.buyer_id) params.append('buyer_id', String(filters.buyer_id))
+      if (filters.date_from) params.append('date_from', filters.date_from)
+      if (filters.date_to) params.append('date_to', filters.date_to)
     }
     const response = await api.get('/orders/', { params })
     return response.data
   },
 
-  getOrder: async (id: number): Promise<OrderResponse> => {
-    const response = await api.get(`/orders/${id}`)
+  getOrder: async (id: number, view?: 'buyer' | 'seller' | 'all'): Promise<OrderResponse> => {
+    const params = new URLSearchParams()
+    if (view) params.append('view', view)
+    const response = await api.get(`/orders/${id}`, { params })
     return response.data
   },
 

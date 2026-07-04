@@ -4,11 +4,11 @@ from src.products.schemas import ProductCard
 
 
 class CartItemCreate(BaseModel):
-    product_id: int
-    quantity: int = Field(ge=1)
+    product_id: int = Field(gt=0)
+    quantity: int = Field(ge=1, le=9999)
 
 class CartItemUpdate(BaseModel):
-    quantity: int = Field(ge=1)
+    quantity: int = Field(ge=1, le=9999)
 
 class CartItemResponse(BaseModel):
     id: int

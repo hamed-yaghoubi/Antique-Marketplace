@@ -102,26 +102,23 @@ def get_filtered_orders(
 
 
 def get_orders(db: Session, current_user: User) -> list[Order]:
-    if current_user.role == UserRole.OWNER:
-        return repository.get_by_seller_id(db, current_user.id)
-    if current_user.role == UserRole.ADMIN:
+    # OWNER and ADMIN are platform-wide roles: they see every order.
+    if current_user.role in (UserRole.OWNER, UserRole.ADMIN):
         return repository.get_all(db)
     return repository.get_by_buyer_id(db, current_user.id)
 
 
-def get_order(db: Session, order_id: int, current_user: User) -> Order:
-    order = repository.get_by_id(db, order_id)
+def get_order(db: Session, order_id: int, current_user: User, view: str = "buyer") -> Order:
+    if current_user.role in (UserRole.ADMIN, UserRole.OWNER) and view == "seller":
+        order = repository.get_by_id_for_seller(db, order_id, current_user.id)
+    else:
+        order = repository.get_by_id(db, order_id)
 
     if order is None:
         raise OrderNotFoundError()
 
-    if current_user.role == UserRole.ADMIN:
+    if current_user.role in (UserRole.ADMIN, UserRole.OWNER):
         return order
-
-    if current_user.role == UserRole.OWNER:
-        if repository.order_contains_seller_product(db, order_id, current_user.id):
-            return order
-        raise ForbiddenError()
 
     if order.buyer_id != current_user.id:
         raise ForbiddenError()
@@ -137,8 +134,7 @@ def update_order_status(db: Session, order_id: int, data: OrderStatusUpdate, cur
 
     # Check role-based authorization
     if current_user.role in (UserRole.OWNER, UserRole.ADMIN):
-        if current_user.role == UserRole.OWNER and not repository.order_contains_seller_product(db, order_id, current_user.id):
-            raise ForbiddenError()
+        pass  # Owners and admins can update any order
     elif current_user.role == UserRole.USER:
         if order.buyer_id != current_user.id:
             raise ForbiddenError()
@@ -182,6 +178,8 @@ def get_order_stats(db: Session, current_user: User) -> dict:
 
 
 def get_dashboard_stats(db: Session, current_user: User) -> dict:
-    if current_user.role == UserRole.OWNER:
-        return repository.get_dashboard_stats(db, seller_id=current_user.id)
-    return repository.get_dashboard_stats(db)
+    # OWNER and ADMIN see platform-wide stats (no seller scoping).
+    if current_user.role in (UserRole.OWNER, UserRole.ADMIN):
+        return repository.get_dashboard_stats(db)
+    # Regular users are treated as sellers for their own product dashboard.
+    return repository.get_dashboard_stats(db, seller_id=current_user.id)

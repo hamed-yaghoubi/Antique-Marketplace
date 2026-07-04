@@ -1,13 +1,24 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+import re
 from datetime import datetime
 from src.users.role import UserRole
 
 class UserBase(BaseModel):
     username: str = Field(min_length=3, max_length=50)
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        if not re.match(r"^[a-zA-Z0-9._]+$", v):
+            raise ValueError("Username can only contain letters, numbers, dots, and underscores")
+        return v
+
 class UserCreate(UserBase):
-    password: str = Field(min_length=8)
-    confirm_password: str
+    password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
 
     @model_validator(mode="after")
     def validate_passwords_match(self):
@@ -33,4 +44,16 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
-    username: str | None = None
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        if not re.match(r"^[a-zA-Z0-9._]+$", v):
+            raise ValueError("Username can only contain letters, numbers, dots, and underscores")
+        return v

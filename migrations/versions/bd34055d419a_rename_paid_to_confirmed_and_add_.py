@@ -19,10 +19,21 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TYPE orderstatus RENAME VALUE 'PAID' TO 'CONFIRMED'")
-    op.execute("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'PREPARING'")
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        # RENAME VALUE is allowed inside a transaction.
+        op.execute("ALTER TYPE orderstatus RENAME VALUE 'PAID' TO 'CONFIRMED'")
+        # ADD VALUE cannot run inside a transaction block on PostgreSQL, so
+        # commit the current transaction, run the DDL, and begin a new one.
+        op.execute("COMMIT")
+        op.execute("ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'PREPARING'")
+        op.execute("BEGIN")
+    # On other dialects (e.g. SQLite) the enum is stored differently and
+    # these statements are no-ops.
 
 
 def downgrade() -> None:
-    op.execute("ALTER TYPE orderstatus RENAME VALUE 'CONFIRMED' TO 'PAID'")
-    op.execute("ALTER TYPE orderstatus DROP VALUE IF EXISTS 'PREPARING'")
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        # PostgreSQL does not support DROP VALUE on an enum; RENAME back only.
+        op.execute("ALTER TYPE orderstatus RENAME VALUE 'CONFIRMED' TO 'PAID'")

@@ -2,6 +2,7 @@ from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from src.core.exceptions import (
+    AppException,
     FileTypeNotAllowedError,
     FileTooLargeError,
     ForbiddenError,
@@ -140,8 +141,17 @@ def delete_product_image(db: Session, product_id: int, image_id: int, current_us
     if image is None or image.product_id != product_id:
         raise ProductNotFoundError()
 
-    # Delete file from disk before deleting from database
-    filepath = os.path.join(".", image.image_url.lstrip("/"))
+    # Delete file from disk before deleting from database. Resolve the absolute
+    # path and ensure it stays inside UPLOAD_DIR to prevent path traversal via
+    # a tampered image_url value.
+    upload_root = os.path.abspath(settings.UPLOAD_DIR)
+    filepath = os.path.abspath(os.path.join(".", image.image_url.lstrip("/")))
+    if filepath != upload_root and not filepath.startswith(upload_root + os.sep):
+        raise AppException(
+            "Invalid image path",
+            code="INVALID_PATH",
+            status_code=400,
+        )
     if os.path.exists(filepath):
         os.remove(filepath)
 

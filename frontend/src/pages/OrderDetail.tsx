@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { ordersApi } from '@/api/orders.api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -25,6 +25,15 @@ const statusMap: Record<OrderStatus, { label: string; variant: 'default' | 'succ
 }
 
 const statusTimeline: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered']
+
+const statusOptions: Array<{ value: OrderStatus; label: string }> = [
+  { value: 'pending', label: t.orders.pending },
+  { value: 'confirmed', label: t.orders.confirmed },
+  { value: 'preparing', label: t.orders.preparing },
+  { value: 'shipped', label: t.orders.shipped },
+  { value: 'delivered', label: t.orders.delivered },
+  { value: 'cancelled', label: t.orders.cancelled },
+]
 
 function StatusTimeline({ currentStatus }: { currentStatus: OrderStatus }) {
   if (currentStatus === 'cancelled') {
@@ -91,13 +100,19 @@ function StatusTimeline({ currentStatus }: { currentStatus: OrderStatus }) {
 
 export function OrderDetail() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending')
+
+  const isSellerView = searchParams.get('from') === 'seller' || searchParams.get('from') === 'admin'
+  const isOwnerView = searchParams.get('from') === 'seller'
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: queryKeys.orders.detail(Number(id)),
-    queryFn: () => ordersApi.getOrder(Number(id)),
+    queryFn: () => ordersApi.getOrder(Number(id), isOwnerView ? 'seller' : undefined),
     enabled: !!id,
   })
 
@@ -119,6 +134,20 @@ export function OrderDetail() {
     onError: (error: Error) => {
       toast.error(error.message || t.orders.cancelFailed)
       setShowCancelModal(false)
+    },
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: ({ status }: { status: OrderStatus }) =>
+      ordersApi.updateOrderStatus(Number(id), status),
+    onSuccess: () => {
+      toast.success(t.orders.management.statusUpdated)
+      invalidateOrders(queryClient)
+      invalidateDashboards(queryClient)
+      setShowStatusModal(false)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t.orders.management.statusUpdateFailed)
     },
   })
 
@@ -149,14 +178,16 @@ export function OrderDetail() {
   const status = statusMap[order.status] || { label: order.status, variant: 'default' as const }
   const validTransitions = getValidTransitions(order.status, isSeller)
   const canCancel = validTransitions.includes('cancelled')
+  const backLink = isSellerView ? '/seller/orders' : '/orders'
+  const backLabel = isSellerView ? t.orders.sellerOrders : t.orders.title
 
   return (
     <div>
       <Breadcrumbs />
       <div className="mb-4">
-        <Link to="/orders" className="inline-flex items-center gap-2 text-sm text-antique-sepia-light hover:text-antique-gold transition-colors">
+        <Link to={backLink} className="inline-flex items-center gap-2 text-sm text-antique-sepia-light hover:text-antique-gold transition-colors">
           <ArrowRight className="h-4 w-4" />
-          {t.orders.title}
+          {backLabel}
         </Link>
       </div>
 
@@ -169,7 +200,13 @@ export function OrderDetail() {
         </div>
         <div className="flex items-center gap-3">
           <Badge variant={status.variant}>{status.label}</Badge>
-          {canCancel && (
+          {isSeller && validTransitions.length > 0 && (
+            <Button size="sm" onClick={() => { setSelectedStatus(order.status); setShowStatusModal(true) }}>
+              <RefreshCw className="h-4 w-4 ml-1" />
+              {t.orders.management.updateStatus}
+            </Button>
+          )}
+          {canCancel && !isSellerView && (
             <Button variant="danger" size="sm" onClick={() => setShowCancelModal(true)}>
               {t.orders.cancelOrder}
             </Button>
@@ -196,8 +233,16 @@ export function OrderDetail() {
         </div>
         <div className="mt-4 border-t-2 border-antique-gold/20 pt-4">
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-antique-wood">{t.orders.total}</span>
-            <span className="text-2xl font-bold text-antique-gold">{formatPrice(order.total_price)}</span>
+            <span className="text-lg font-bold text-antique-wood">
+              {isOwnerView ? t.orders.yourTotal : t.orders.total}
+            </span>
+            <span className="text-2xl font-bold text-antique-gold">
+              {formatPrice(
+                isOwnerView
+                  ? order.items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
+                  : order.total_price
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -208,6 +253,30 @@ export function OrderDetail() {
           <Button variant="secondary" onClick={() => setShowCancelModal(false)}>{t.common.cancel}</Button>
           <Button variant="danger" isLoading={cancelMutation.isPending} onClick={() => cancelMutation.mutate()}>
             {t.orders.cancelOrder}
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title={t.orders.management.updateStatus} size="sm">
+        <p className="mb-4 text-sm text-antique-sepia-light">{t.orders.management.confirmStatus}</p>
+        <select
+          className="input-field w-full"
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
+        >
+          <option value={order.status}>{statusMap[order.status].label}</option>
+          {statusOptions
+            .filter((opt) => validTransitions.includes(opt.value))
+            .map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+        </select>
+        <div className="flex justify-start gap-3 mt-6">
+          <Button variant="secondary" onClick={() => setShowStatusModal(false)}>{t.admin.cancel}</Button>
+          <Button isLoading={statusMutation.isPending} onClick={() => statusMutation.mutate({ status: selectedStatus })}>
+            {t.admin.update}
           </Button>
         </div>
       </Modal>

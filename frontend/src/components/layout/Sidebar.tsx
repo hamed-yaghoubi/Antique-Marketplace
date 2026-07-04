@@ -33,7 +33,7 @@ const adminItems = [
 ]
 
 export function Sidebar() {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, isOwner } = useAuth()
 
   return (
     <aside className="fixed right-0 top-0 z-40 h-screen w-64 sidebar-style">
@@ -99,6 +99,24 @@ export function Sidebar() {
 
             {isAdmin && (
               <>
+                {isOwner && (
+                  <>
+                    <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
+                      {t.nav.seller}
+                    </div>
+                    {sellerItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={navLinkClass}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </>
+                )}
+
                 <div className="mb-3 mt-6 px-3 text-xs font-semibold text-antique-gold/50">
                   {t.layout.admin}
                 </div>

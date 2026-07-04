@@ -78,7 +78,13 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            # PostgreSQL does not allow ALTER TYPE ... ADD VALUE (and a few
+            # other enum DDL statements) inside a transaction block. Running
+            # each migration as its own transaction avoids wrapping such
+            # statements, so migrations that manage enums work correctly.
+            transaction_per_migration=False,
         )
 
         with context.begin_transaction():

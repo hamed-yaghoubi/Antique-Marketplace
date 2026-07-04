@@ -32,6 +32,10 @@ export interface OrderFilters {
   sort_by?: string
   sort_order?: 'asc' | 'desc'
   view?: 'buyer' | 'seller' | 'all'
+  seller_id?: number
+  buyer_id?: number
+  date_from?: string
+  date_to?: string
 }
 
 export interface PaginatedOrderResponse {

@@ -143,7 +143,7 @@ export function AdminOrders() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/orders/${order.id}`}
+                          to={`/orders/${order.id}?from=admin`}
                           className="rounded-lg p-1.5 text-antique-sepia-light hover:bg-antique-gold/10 hover:text-antique-gold transition-colors"
                         >
                           <Eye className="h-4 w-4" />

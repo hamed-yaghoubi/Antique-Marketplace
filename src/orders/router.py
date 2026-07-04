@@ -69,8 +69,8 @@ def read_orders(
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
-def read_order(order_id: int, db: DbSession, current_user: CurrentUser):
-    return service.get_order(db, order_id, current_user)
+def read_order(order_id: int, db: DbSession, current_user: CurrentUser, view: str = Query(default="buyer")):
+    return service.get_order(db, order_id, current_user, view=view)
 
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
