@@ -73,7 +73,7 @@ docker compose up
 **Fix option C** - Use a mirror (Iran/China):
 Add to Dockerfile before `pip install`:
 ```dockerfile
-ENV PIP_INDEX_URL=https://mirrors.cloud.aliyuncs.com/pypi/simple/
+ENV PIP_INDEX_URL=https://mirror-pypi.runflare.com/simple/
 ```
 
 ### 3. Backend can't connect to database
