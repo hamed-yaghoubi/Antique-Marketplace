@@ -8,6 +8,13 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY frontend/ ./
 
+# ✅ فقط این خط عوض می‌شه
+RUN npm run build
+
+# ✅ این خط جدید اضافه می‌شه (برای نصب serve)
+RUN npm install -g serve
+
 EXPOSE 3000
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+# ✅ این خط هم عوض می‌شه
+CMD ["serve", "-s", "dist", "-l", "3000"]
