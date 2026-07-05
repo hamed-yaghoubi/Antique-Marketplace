@@ -8,7 +8,7 @@ git clone <repo-url>
 cd Antique-Marketplace
 
 # 2. Setup environment
-cp .env.example .env
+cp .env.docker .env
 # Edit .env - change database URL for Docker:
 # SQLALCHEMY_DATABASE_URL = postgresql+psycopg://user:pass@db:5432/db
 
