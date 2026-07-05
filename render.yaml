@@ -1,0 +1,44 @@
+services:
+  - name: antique-backend
+    type: web
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/Antique-Marketplace
+    plan: free
+    dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
+    envVars:
+      - key: SQLALCHEMY_DATABASE_URL
+        fromDatabase:
+          name: antique-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://antique-frontend.onrender.com
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
+    autoDeploy: true
+
+  - name: antique-frontend
+    type: web
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/Antique-Marketplace
+    plan: free
+    dockerfilePath: ./docker/frontend.Dockerfile
+    dockerContext: .
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://antique-backend.onrender.com
+      - key: PORT
+        value: 3000
+    healthCheckPath: /
+    autoDeploy: true
+
+databases:
+  - name: antique-db
+    databaseName: antique_marketplace
+    user: antique_user
+    plan: free
+    ipAllowList: []
+    postgresMajorVersion: 16
