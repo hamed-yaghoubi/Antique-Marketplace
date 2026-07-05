@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Crown } from 'lucide-react'
+import { Crown, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -20,6 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -75,9 +76,19 @@ export function Login() {
 
             <Input
               label={t.auth.password}
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder={t.auth.passwordPlaceholder}
               error={errors.password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('password')}
             />
 

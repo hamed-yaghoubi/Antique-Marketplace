@@ -2,36 +2,46 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { ProductFilters } from '@/types/products'
 import type { OrderFilters } from '@/types/orders'
 
+// IMPORTANT: query keys are organized as a parent/child tree so that
+// invalidating a root key (e.g. ['products']) cascades to ALL child queries
+// (lists, details, dashboards, etc.). TanStack Query matches by key prefix,
+// so detail keys MUST be nested under their root — using sibling prefixes
+// (e.g. ['product', id] next to ['products']) is a bug that silently breaks
+// cache invalidation after mutations.
+
 export const queryKeys = {
   products: {
+    // Root key — invalidating this refreshes every product query.
     all: ['products'] as const,
-    list: (filters: ProductFilters) => ['products', filters] as const,
-    detail: (id: number) => ['product', id] as const,
-    myProducts: ['my-products'] as const,
-    adminList: (filters: ProductFilters) => ['admin-products', filters] as const,
-    userProducts: (userId: number) => ['admin-user-products', userId] as const,
+    list: (filters: ProductFilters) => ['products', 'list', filters] as const,
+    detail: (id: number) => ['products', 'detail', id] as const,
+    myProducts: ['products', 'mine'] as const,
+    adminList: (filters: ProductFilters) => ['products', 'admin', filters] as const,
+    userProducts: (userId: number) => ['products', 'user', userId] as const,
   },
   cart: {
     all: ['cart'] as const,
   },
   orders: {
+    // Root key — invalidating this refreshes every order query.
     all: ['orders'] as const,
-    list: (filters: OrderFilters) => ['orders', filters] as const,
-    detail: (id: number) => ['order', id] as const,
-    stats: ['order-stats'] as const,
-    dashboard: ['dashboard-stats'] as const,
-    sellerList: (filters: OrderFilters) => ['seller-orders', filters] as const,
-    adminList: (filters: OrderFilters) => ['admin-orders', filters] as const,
-    customerRecent: ['customer-orders'] as const,
-    customerStats: ['customer-order-stats'] as const,
-    sellerRecent: ['seller-recent-orders'] as const,
-    sellerDashboard: ['seller-dashboard-stats'] as const,
-    adminRecent: ['admin-recent-orders'] as const,
-    adminDashboard: ['admin-dashboard-stats'] as const,
+    list: (filters: OrderFilters) => ['orders', 'list', filters] as const,
+    detail: (id: number) => ['orders', 'detail', id] as const,
+    stats: ['orders', 'stats'] as const,
+    dashboard: ['orders', 'dashboard'] as const,
+    sellerList: (filters: OrderFilters) => ['orders', 'seller', filters] as const,
+    adminList: (filters: OrderFilters) => ['orders', 'admin', filters] as const,
+    customerRecent: ['orders', 'customer-recent'] as const,
+    customerStats: ['orders', 'customer-stats'] as const,
+    sellerRecent: ['orders', 'seller-recent'] as const,
+    sellerDashboard: ['orders', 'seller-dashboard'] as const,
+    adminRecent: ['orders', 'admin-recent'] as const,
+    adminDashboard: ['orders', 'admin-dashboard'] as const,
   },
   users: {
-    all: ['admin-users'] as const,
-    detail: (id: number) => ['admin-user', id] as const,
+    // Root key — invalidating this refreshes every user query.
+    all: ['users'] as const,
+    detail: (id: number) => ['users', 'detail', id] as const,
   },
 } as const
 

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { User, Lock } from 'lucide-react'
+import { User, Lock, Eye, EyeOff } from 'lucide-react'
 import { authApi } from '@/api/auth.api'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { Input } from '@/components/ui/Input'
@@ -31,6 +31,9 @@ type PasswordForm = z.infer<typeof passwordSchema>
 export function Profile() {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const {
     register,
@@ -106,20 +109,50 @@ export function Profile() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
               label={t.profile.currentPassword}
-              type="password"
+              type={showCurrent ? 'text' : 'password'}
               error={errors.current_password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowCurrent((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('current_password')}
             />
             <Input
               label={t.profile.newPassword}
-              type="password"
+              type={showNew ? 'text' : 'password'}
               error={errors.new_password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowNew((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('new_password')}
             />
             <Input
               label={t.profile.confirmPassword}
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               error={errors.confirm_password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('confirm_password')}
             />
             <Button type="submit" isLoading={isLoading}>

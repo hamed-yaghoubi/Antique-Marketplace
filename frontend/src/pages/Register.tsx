@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Crown } from 'lucide-react'
+import { Crown, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -28,6 +28,8 @@ type RegisterForm = z.infer<typeof registerSchema>
 
 export function Register() {
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const { register: registerUser } = useAuth()
   const navigate = useNavigate()
 
@@ -83,17 +85,37 @@ export function Register() {
 
             <Input
               label={t.auth.password}
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder={t.auth.passwordPlaceholder}
               error={errors.password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('password')}
             />
 
             <Input
               label={t.auth.confirmPassword}
-              type="password"
+              type={showConfirm ? 'text' : 'password'}
               placeholder={t.auth.passwordPlaceholder}
               error={errors.confirm_password?.message}
+              endAdornment={
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="text-antique-sepia-light hover:text-antique-gold transition-colors"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               {...register('confirm_password')}
             />
 
